@@ -41,7 +41,9 @@ public class SearchCourseRequestDto {
     @NoArgsConstructor
     @FieldDefaults(level = AccessLevel.PRIVATE)
     public static class Filters {
-        List<Filter> filters;
+        List<String> courses;
+        List<String> departments;
+        List<String> graduationLevels;
         List<String> countries;
         RatingFilter rating;
         DateRange dateAdded;
@@ -61,16 +63,6 @@ public class SearchCourseRequestDto {
         public static class DateRange {
             String from;
             String to;
-        }
-
-        @Data
-        @AllArgsConstructor
-        @NoArgsConstructor
-        @FieldDefaults(level = AccessLevel.PRIVATE)
-        public static class Filter {
-            String table;
-            String column;
-            String value;
         }
     }
 

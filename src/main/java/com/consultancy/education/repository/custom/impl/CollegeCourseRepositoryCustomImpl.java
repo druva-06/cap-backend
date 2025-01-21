@@ -79,6 +79,9 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         // Add conditions for the main query
         addFilterConditions(queryStr, searchCourseRequestDto);
 
+        // Add sorting
+        //addSorting(queryStr, searchCourseRequestDto);
+
         // Add pagination if available
         if (searchCourseRequestDto.getPagination() != null) {
             int size = searchCourseRequestDto.getPagination().getSize();
@@ -98,42 +101,65 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
 
     private void addFilterConditions(StringBuilder queryStr, SearchCourseRequestDto searchCourseRequestDto) {
         // Add filter conditions dynamically based on the filters
-        for (SearchCourseRequestDto.Filters.Filter filter : searchCourseRequestDto.getFilters().getFilters()) {
-            String table = filter.getTable();
-            String column = filter.getColumn();
-            String value = filter.getValue();
-
-            if (value != null && !value.isEmpty()) {
-                if ("courses".equalsIgnoreCase(table)) {
-                    queryStr.append("AND crs.").append(column).append(" LIKE :").append(column).append(" ");
-                } else if ("colleges".equalsIgnoreCase(table)) {
-                    queryStr.append("AND clg.").append(column).append(" LIKE :").append(column).append(" ");
-                }
-            }
+        if (searchCourseRequestDto.getFilters().getCourses() != null && !searchCourseRequestDto.getFilters().getCourses().isEmpty()) {
+            System.out.println(searchCourseRequestDto.getFilters().getCourses());
+            queryStr.append("AND crs.name IN (:courses) ");
         }
-
+        if (searchCourseRequestDto.getFilters().getDepartments() != null && !searchCourseRequestDto.getFilters().getDepartments().isEmpty()) {
+            queryStr.append("AND crs.department IN (:departments) "); // Assuming department is in courses table
+        }
+        if (searchCourseRequestDto.getFilters().getGraduationLevels() != null && !searchCourseRequestDto.getFilters().getGraduationLevels().isEmpty()) {
+            queryStr.append("AND crs.graduation_level IN (:graduation_levels) ");
+        }
         if (searchCourseRequestDto.getFilters().getCountries() != null && !searchCourseRequestDto.getFilters().getCountries().isEmpty()) {
             queryStr.append("AND clg.country IN (:countries) ");
+        }
+//        if (searchCourseRequestDto.getFilters().getRating() != null) {
+//            queryStr.append("AND clg.rating >= :rating ");
+//        }
+//        if (searchCourseRequestDto.getFilters().getDateAdded() != null) {
+//            queryStr.append("AND cc.date_added >= :fromDate AND cc.date_added <= :toDate ");
+//        }
+        if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
+            queryStr.append("AND (crs.name LIKE :searchTerm OR crs.department LIKE :searchTerm) ");
+        }
+    }
+
+    private void addSorting(StringBuilder queryStr, SearchCourseRequestDto searchCourseRequestDto) {
+        if (searchCourseRequestDto.getSort() != null && !searchCourseRequestDto.getSort().isEmpty()) {
+            queryStr.append("ORDER BY ");
+            for (SearchCourseRequestDto.Sort sort : searchCourseRequestDto.getSort()) {
+                queryStr.append(sort.getField()).append(" ").append(sort.getOrder()).append(", ");
+            }
+            queryStr.setLength(queryStr.length() - 2); // Remove trailing comma
         }
     }
 
     private void setQueryParameters(Query query, SearchCourseRequestDto searchCourseRequestDto) {
-        // Set parameters dynamically based on filters
         if (searchCourseRequestDto.getFilters() != null) {
-            if (searchCourseRequestDto.getFilters().getFilters() != null) {
-                for (SearchCourseRequestDto.Filters.Filter filter : searchCourseRequestDto.getFilters().getFilters()) {
-                    String value = filter.getValue();
-                    if (value != null && !value.isEmpty()) {
-                        query.setParameter(filter.getColumn(), "%" + value + "%");
-                    }
-                }
+            if (searchCourseRequestDto.getFilters().getCourses() != null && !searchCourseRequestDto.getFilters().getCourses().isEmpty()) {
+                query.setParameter("courses", searchCourseRequestDto.getFilters().getCourses());
             }
-
+            if (searchCourseRequestDto.getFilters().getDepartments() != null && !searchCourseRequestDto.getFilters().getDepartments().isEmpty()) {
+                query.setParameter("departments", searchCourseRequestDto.getFilters().getDepartments());
+            }
+            if (searchCourseRequestDto.getFilters().getGraduationLevels() != null && !searchCourseRequestDto.getFilters().getGraduationLevels().isEmpty()) {
+                query.setParameter("graduation_levels", searchCourseRequestDto.getFilters().getGraduationLevels());
+            }
             if (searchCourseRequestDto.getFilters().getCountries() != null && !searchCourseRequestDto.getFilters().getCountries().isEmpty()) {
-                query.setParameter("countries", searchCourseRequestDto.getFilters().getCountries().stream()
-                        .map(String::toLowerCase)
-                        .collect(Collectors.toList()));
+                query.setParameter("countries", searchCourseRequestDto.getFilters().getCountries());
+            }
+//            if (searchCourseRequestDto.getFilters().getRating() != null) {
+//                query.setParameter("rating", searchCourseRequestDto.getFilters().getRating().getGte());
+//            }
+//            if (searchCourseRequestDto.getFilters().getDateAdded() != null) {
+//                query.setParameter("fromDate", searchCourseRequestDto.getFilters().getDateAdded().getFrom());
+//                query.setParameter("toDate", searchCourseRequestDto.getFilters().getDateAdded().getTo());
+//            }
+            if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
+                query.setParameter("searchTerm", "%" + searchCourseRequestDto.getSearch().getTerm() + "%");
             }
         }
     }
+
 }

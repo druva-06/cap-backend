@@ -37,7 +37,7 @@ public class CollegeCourseController {
         }
     }
 
-    @GetMapping("/collegeCourses")
+    @PostMapping("/collegeCourses")
     public ResponseEntity<?> getCollegeCourses(@RequestBody SearchCourseRequestDto searchCourseRequestDto) {
         try{
             SearchCourseResponseDto<CollegeCourseResponseDto> searchCourseResponseDto = collegeCourseService.getCollegeCourses(searchCourseRequestDto);
