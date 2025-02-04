@@ -3,7 +3,9 @@ package com.consultancy.education.service.impl;
 import com.consultancy.education.DTOs.requestDTOs.collegeCourse.CollegeCourseRequestExcelDto;
 import com.consultancy.education.DTOs.requestDTOs.search.SearchCourseRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.collegeCourse.CollegeCourseResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.currency.CurrencyResponseDTO;
 import com.consultancy.education.DTOs.responseDTOs.search.SearchCourseResponseDto;
+import com.consultancy.education.api.CurrencyAPIService;
 import com.consultancy.education.enums.GraduationLevel;
 import com.consultancy.education.helper.ExcelHelper;
 import com.consultancy.education.model.College;
@@ -16,9 +18,11 @@ import com.consultancy.education.service.CollegeCourseService;
 import com.consultancy.education.transformer.CollegeCourseTransformer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CollegeCourseServiceImpl implements CollegeCourseService {
@@ -26,13 +30,16 @@ public class CollegeCourseServiceImpl implements CollegeCourseService {
     private final CollegeCourseRepository collegeCourseRepository;
     private final CollegeRepository collegeRepository;
     private final CourseRepository courseRepository;
+    private final CurrencyAPIService currencyAPIService;
 
     public CollegeCourseServiceImpl(CollegeCourseRepository collegeCourseRepository,
                                     CollegeRepository collegeRepository,
-                                    CourseRepository courseRepository) {
+                                    CourseRepository courseRepository,
+                                    CurrencyAPIService currencyAPIService) {
         this.collegeCourseRepository = collegeCourseRepository;
         this.collegeRepository = collegeRepository;
         this.courseRepository = courseRepository;
+        this.currencyAPIService = currencyAPIService;
     }
 
     @Override
@@ -83,6 +90,8 @@ public class CollegeCourseServiceImpl implements CollegeCourseService {
 
     @Override
     public SearchCourseResponseDto<CollegeCourseResponseDto> getCollegeCourses(SearchCourseRequestDto searchCourseRequestDto) {
+//        Mono<CurrencyResponseDTO> currencyResponseDTO = currencyAPIService.fetchData().map(response ->  response);
+//        System.out.println(currencyResponseDTO);
         return collegeCourseRepository.searchCollegeCourses(searchCourseRequestDto);
     }
 
