@@ -3,6 +3,7 @@ package com.consultancy.education.model;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.w3c.dom.Text;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -24,10 +25,10 @@ public class College {
     @Column(nullable = false)
     String name;
 
-    @Column
+    @Column(name = "campus_name")
     String campus;
 
-    @Column(name = "campus_code", nullable = false)
+    @Column(name = "campus_code", unique = true, nullable = false)
     String campusCode;
 
     @Column(name = "website_url")
@@ -43,9 +44,9 @@ public class College {
     Integer establishedYear;
 
     @Column(name = "ranking")
-    Integer ranking;
+    String ranking;
 
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     String description;
 
     @Column(name = "campus_gallery_video_link")

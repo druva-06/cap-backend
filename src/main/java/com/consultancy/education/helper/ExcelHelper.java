@@ -13,9 +13,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class ExcelHelper {
 
@@ -25,8 +23,8 @@ public class ExcelHelper {
         return contentType.equals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
-    public static List<College> convertCollegeExcelIntoList(InputStream inputStream) throws Exception {
-        List<College> collegeArrayList = new ArrayList<>();
+    public static Map<String, College> convertCollegeExcelIntoList(InputStream inputStream) throws Exception {
+        Map<String, College> collegeMap = new HashMap<>();
 
         try{
             XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
@@ -42,14 +40,59 @@ public class ExcelHelper {
                 row++;
                 College college = getCollege(collegeRow);
                 if(college.getName() == null) break;
-                collegeArrayList.add(college);
+                collegeMap.put(college.getCampusCode(), college);
             }
         }
         catch (Exception e){
             throw new ExcelException(e.getMessage());
         }
 
-        return collegeArrayList;
+        return collegeMap;
+    }
+
+    private static College getCollege(Row collegeRow) {
+        BasicValidations basicValidations = new BasicValidations();
+        int col = 0;
+        College college = new College();
+        for (Cell cell : collegeRow) {
+            cell = collegeRow.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+            switch (col){
+                case 0:
+                    college.setName(basicValidations.validateString(cell));
+                    break;
+                case 1:
+                    college.setCampus(basicValidations.validateString(cell));
+                    break;
+                case 2:
+                    college.setCampusCode(basicValidations.validateString(cell));
+                    break;
+                case 3:
+                    college.setWebsiteUrl(basicValidations.validateString(cell));
+                    break;
+                case 4:
+                    college.setCollegeLogo(basicValidations.validateString(cell));
+                    break;
+                case 5:
+                    college.setCountry(basicValidations.validateString(cell));
+                    break;
+                case 6:
+                    college.setEstablishedYear(basicValidations.validateInteger(cell));
+                    break;
+                case 7:
+                    college.setRanking(basicValidations.validateString(cell));
+                    break;
+                case 8:
+                    college.setDescription(basicValidations.validateString(cell));
+                    break;
+                case 9:
+                    college.setCampusGalleryVideoLink(basicValidations.validateString(cell));
+                    break;
+                default:
+                    break;
+            }
+            col++;
+        }
+        return college;
     }
 
     public static List<CollegeCourseRequestExcelDto> convertCollegeCourseExcelIntoList(InputStream inputStream) throws Exception {
@@ -135,51 +178,6 @@ public class ExcelHelper {
             col++;
         }
         return course;
-    }
-
-    private static College getCollege(Row collegeRow) {
-        BasicValidations basicValidations = new BasicValidations();
-        int col = 0;
-        College college = new College();
-        for (Cell cell : collegeRow) {
-            cell = collegeRow.getCell(col, Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
-            switch (col){
-                case 0:
-                    college.setName(basicValidations.validateString(cell));
-                    break;
-                case 1:
-                    college.setCampus(basicValidations.validateString(cell));
-                    break;
-                case 2:
-                    college.setCampusCode(basicValidations.validateString(cell));
-                    break;
-                case 3:
-                    college.setWebsiteUrl(basicValidations.validateString(cell));
-                    break;
-                case 4:
-                    college.setCollegeLogo(basicValidations.validateString(cell));
-                    break;
-                case 5:
-                    college.setCountry(basicValidations.validateString(cell));
-                    break;
-                case 6:
-                    college.setEstablishedYear(basicValidations.validateInteger(cell));
-                    break;
-                case 7:
-                    college.setRanking(basicValidations.validateInteger(cell));
-                    break;
-                case 8:
-                    college.setDescription(basicValidations.validateString(cell));
-                    break;
-                case 9:
-                    college.setCampusGalleryVideoLink(basicValidations.validateString(cell));
-                    break;
-                default:
-                    break;
-            }
-            col++;
-        }
-        return college;
     }
 
     private static CollegeCourseRequestExcelDto getCollegeCourse(Row collegeRow) {

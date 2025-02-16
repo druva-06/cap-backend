@@ -34,8 +34,7 @@ public class CollegeRequestDto {
     @Min(value = 1100, message = "Established year must be after 1100")
     Integer establishedYear;
 
-    @Min(value = 1, message = "Ranking must be greater than 0")
-    Integer ranking;
+    String ranking;
 
     String description;
 

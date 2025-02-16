@@ -17,12 +17,16 @@ import com.consultancy.education.transformer.CollegeCourseTransformer;
 import com.consultancy.education.transformer.CollegeTransformer;
 import com.consultancy.education.utils.PatternConvert;
 import com.consultancy.education.validations.CollegeValidations;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import static com.consultancy.education.utils.Generators.generateCampusCode;
@@ -30,40 +34,91 @@ import static com.consultancy.education.utils.Generators.generateCampusCode;
 @Service
 public class CollegeServiceImpl implements CollegeService {
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     private final CollegeRepository collegeRepository;
 
     public CollegeServiceImpl(CollegeRepository collegeRepository) {
         this.collegeRepository = collegeRepository;
     }
 
+    private String escapeSqlString(String value) {
+        return value != null ? value.replace("'", "''") : null;
+    }
+
     @Override
+    @Transactional
     public String bulkCollegesUpload(MultipartFile file) {
-        int newCollegeCount = 0;
-        int existingCount = 0;
-        int count = 0;
-        try{
-            List<College> collegeList = ExcelHelper.convertCollegeExcelIntoList(file.getInputStream());
-            for (College college : collegeList) {
-                College existingCollege =  collegeRepository.findByNameAndCampusAndCountry(college.getName(), college.getCampus(), college.getCountry());
-                if(existingCollege != null){
-                    if(CollegeValidations.validateCollegeData(existingCollege, college)){
-                        continue;
-                    }
-                    CollegeTransformer.updateCollegeDetailsEntityToEntity(existingCollege, college);
-                    collegeRepository.save(existingCollege);
-                    existingCount++;
-                }
-                else{
-                    collegeRepository.save(college);
-                    newCollegeCount++;
-                }
-                System.out.println(count++);
+        try {
+            // Convert Excel Data into Map
+            Map<String, College> colleges = ExcelHelper.convertCollegeExcelIntoList(file.getInputStream());
+
+            if (colleges.isEmpty()) {
+                return "No colleges to upload";
             }
+
+            String sql = """
+                    INSERT INTO colleges (
+                    campus_code, name, campus_name, website_url, college_logo, 
+                    country, established_year, ranking, description, 
+                    campus_gallery_video_link, created_at, updated_at
+                ) VALUES %s
+                ON DUPLICATE KEY UPDATE 
+                    name = VALUES(name), 
+                    campus_name = VALUES(campus_name), 
+                    website_url = VALUES(website_url), 
+                    college_logo = VALUES(college_logo), 
+                    country = VALUES(country), 
+                    established_year = VALUES(established_year), 
+                    ranking = VALUES(ranking), 
+                    description = VALUES(description), 
+                    campus_gallery_video_link = VALUES(campus_gallery_video_link), 
+                    updated_at = NOW()
+            """;
+
+
+            StringBuilder values = new StringBuilder();
+            int batchSize = 1000;
+            int count = 0;
+            List<String> batchQueries = new ArrayList<>();
+
+            for (College college : colleges.values()) {
+                values.append(String.format(
+                        "('%s', '%s', '%s', %s, %s, '%s', %s, %s, %s, %s, NOW(), NOW()),",
+                        escapeSqlString(college.getCampusCode()),
+                        escapeSqlString(college.getName()),
+                        escapeSqlString(college.getCampus()),
+                        (college.getWebsiteUrl() != null ? "'" + escapeSqlString(college.getWebsiteUrl()) + "'" : "NULL"),
+                        (college.getCollegeLogo() != null ? "'" + escapeSqlString(college.getCollegeLogo()) + "'" : "NULL"),
+                        escapeSqlString(college.getCountry()),
+                        (college.getEstablishedYear() != null ? college.getEstablishedYear() : "NULL"),
+                        (college.getRanking() != null ? "'" + escapeSqlString(college.getRanking()) + "'" : "NULL"),
+                        (college.getDescription() != null ? "'" + escapeSqlString(college.getDescription()) + "'" : "NULL"),
+                        (college.getCampusGalleryVideoLink() != null ? "'" + escapeSqlString(college.getCampusGalleryVideoLink()) + "'" : "NULL")
+                ));
+
+                count++;
+                if (count % batchSize == 0) {
+                    batchQueries.add(String.format(sql, values.substring(0, values.length() - 1)));
+                    values.setLength(0);
+                }
+            }
+
+            if (!values.isEmpty()) {
+                batchQueries.add(String.format(sql, values.substring(0, values.length() - 1)));
+            }
+
+            // Execute each batch separately
+            for (String batchQuery : batchQueries) {
+                entityManager.createNativeQuery(batchQuery).executeUpdate();
+            }
+
+            return "Colleges Uploaded Successfully!";
+
+        } catch (Exception e) {
+            throw new RuntimeException("Bulk Insert/Update failed!", e);
         }
-        catch (Exception e){
-            throw new DatabaseException(e.getMessage());
-        }
-        return "Created College Count : " + newCollegeCount + " & Updated College Count : " + existingCount;
     }
 
     @Override
