@@ -10,9 +10,12 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface CollegeRepository extends JpaRepository<College, Long> {
+
+    List<College> findByCampusCodeIn(Set<String> campusCodes);
 
     College findByNameAndCampusAndCountry(String name, String campus, String country);
 

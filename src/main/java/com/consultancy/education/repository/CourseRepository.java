@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface CourseRepository extends JpaRepository<Course, Long> {
@@ -24,4 +25,7 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Course findByNameAndDepartmentAndGraduationLevel(String name, String department, GraduationLevel graduationLevel);
 
     List<Course> findByNameAndGraduationLevel(String name, GraduationLevel graduationLevel);
+
+    @Query("SELECT c FROM Course c WHERE CONCAT(c.name, '|', c.department, '|', c.graduationLevel) IN :courseKeys")
+    List<Course> findByCourseKeys(@Param("courseKeys") Set<String> courseKeys);
 }

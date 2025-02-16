@@ -42,7 +42,7 @@ public class CollegeCourse {
     String applicationFee;
 
     @Column(name = "tuition_fee")
-    Double tuitionFee;
+    String tuitionFee;
 
     @Column(name = "ielts_min_score")
     Double ieltsMinScore;

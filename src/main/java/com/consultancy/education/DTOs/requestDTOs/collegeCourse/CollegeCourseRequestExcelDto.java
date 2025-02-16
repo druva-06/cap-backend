@@ -9,13 +9,11 @@ import lombok.experimental.FieldDefaults;
 @Builder
 public class CollegeCourseRequestExcelDto {
 
-    String collegeName;
-
-    String campus;
-
-    String country;
+    String campusCode;
 
     String courseName;
+
+    String department;
 
     String graduationLevel;
 
@@ -55,11 +53,11 @@ public class CollegeCourseRequestExcelDto {
 
     Double catMinScore;
 
-    String min10thScore;
+    Double min10thScore;
 
-    String minInterScore;
+    Double minInterScore;
 
-    String minGraduationScore;
+    Double minGraduationScore;
 
     String scholarshipEligible;
 

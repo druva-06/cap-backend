@@ -16,21 +16,31 @@ import com.consultancy.education.repository.CollegeRepository;
 import com.consultancy.education.repository.CourseRepository;
 import com.consultancy.education.service.CollegeCourseService;
 import com.consultancy.education.transformer.CollegeCourseTransformer;
+import com.consultancy.education.utils.FormatConverter;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class CollegeCourseServiceImpl implements CollegeCourseService {
 
+
+    @PersistenceContext
+    EntityManager entityManager;
+
     private final CollegeCourseRepository collegeCourseRepository;
     private final CollegeRepository collegeRepository;
     private final CourseRepository courseRepository;
-    private final CurrencyAPIService currencyAPIService;
 
     public CollegeCourseServiceImpl(CollegeCourseRepository collegeCourseRepository,
                                     CollegeRepository collegeRepository,
@@ -39,53 +49,98 @@ public class CollegeCourseServiceImpl implements CollegeCourseService {
         this.collegeCourseRepository = collegeCourseRepository;
         this.collegeRepository = collegeRepository;
         this.courseRepository = courseRepository;
-        this.currencyAPIService = currencyAPIService;
     }
 
-    @Override
+    @Transactional
     public String bulkCollegeCourseUpload(MultipartFile file) {
-        int mapped = 0;
-        int skipped = 0;
-        ArrayList<Long> duplicates = new ArrayList<>();
         try {
-            List<CollegeCourseRequestExcelDto> collegeCourseRequestExcelDtos = ExcelHelper.convertCollegeCourseExcelIntoList(file.getInputStream());
-            for(CollegeCourseRequestExcelDto collegeCourseRequestExcelDto: collegeCourseRequestExcelDtos) {
-                GraduationLevel graduationLevel;
-                try{
-                    graduationLevel = GraduationLevel.valueOf(collegeCourseRequestExcelDto.getGraduationLevel().toUpperCase());
-                }
-                catch(Exception e){
-                    skipped++;
-                    continue;
-                }
-                College college = collegeRepository.findByNameAndCampusAndCountry(collegeCourseRequestExcelDto.getCollegeName(), collegeCourseRequestExcelDto.getCampus(), collegeCourseRequestExcelDto.getCountry());
-                List<Course> courses = courseRepository.findByNameAndGraduationLevel(collegeCourseRequestExcelDto.getCourseName(), graduationLevel);
-                if(courses.size() > 1){
-                   for(int i=0; i<courses.size(); i++){
-                       duplicates.add(courses.get(i).getId());
-                   }
-                }
-                if(college != null && courses.get(0) != null) {
-                    CollegeCourse collegeCourse = CollegeCourseTransformer.excelToEntity(collegeCourseRequestExcelDto);
-                    collegeCourse.setCollege(college);
-                    System.out.println(collegeCourse.getIntakeMonths());
-                    collegeCourse.setCourse(courses.get(0));
-                    System.out.println("Count " + mapped + " College Name: " + college.getName() + " Course Name: " + courses.get(0).getName());
-                    courses.get(0).getCollegeCourses().add(collegeCourse);
-                    college.getCollegeCourses().add(collegeCourse);
-                    collegeRepository.save(college);
-                    mapped++;
-                }
-                else{
-                    skipped++;
+            // Step 1: Read data from Excel
+            List<CollegeCourseRequestExcelDto> courseDtos = ExcelHelper.convertCollegeCourseExcelIntoList(file.getInputStream());
+
+            if (courseDtos.isEmpty()) {
+                return "No courses to upload";
+            }
+
+            // Step 2: Fetch existing Colleges and Courses to avoid multiple DB queries
+            Set<String> campusCodes = courseDtos.stream().map(CollegeCourseRequestExcelDto::getCampusCode).collect(Collectors.toSet());
+            Set<String> courseKeys = courseDtos.stream()
+                    .map(dto -> dto.getCourseName() + "|" + dto.getDepartment() + "|" + dto.getGraduationLevel())
+                    .collect(Collectors.toSet());
+
+            Map<String, College> collegeMap = collegeRepository.findByCampusCodeIn(campusCodes)
+                    .stream().collect(Collectors.toMap(College::getCampusCode, c -> c));
+
+            Map<String, Course> courseMap = courseRepository.findByCourseKeys(courseKeys)
+                    .stream().collect(Collectors.toMap(
+                            course -> course.getName() + "|" + course.getDepartment() + "|" + course.getGraduationLevel(),
+                            c -> c));
+
+            // Step 3: Prepare entities for batch insert
+            List<CollegeCourse> collegeCourses = new ArrayList<>();
+
+            for (CollegeCourseRequestExcelDto dto : courseDtos) {
+                College college = collegeMap.get(dto.getCampusCode());
+                Course course = courseMap.get(dto.getCourseName() + "|" + dto.getDepartment() + "|" + dto.getGraduationLevel().toUpperCase());
+                System.out.println(course);
+
+                if (college != null && course != null) {
+                    CollegeCourse newCourse = new CollegeCourse();
+                    newCourse.setCollege(college);
+                    newCourse.setCourse(course);
+                    newCourse.setCourseUrl(dto.getCourseUrl());
+                    newCourse.setDuration(FormatConverter.cnvrtDurationToInteger(dto.getDuration()));
+                    newCourse.setIntakeMonths(FormatConverter.cnvrtIntakesToList(dto.getIntakeMonths()));
+                    newCourse.setIntakeYear(dto.getIntakeYear());
+                    newCourse.setEligibilityCriteria(dto.getEligibilityCriteria());
+                    newCourse.setApplicationFee(dto.getApplicationFee());
+                    newCourse.setTuitionFee(dto.getTuitionFee());
+                    newCourse.setIeltsMinScore(dto.getIeltsMinScore());
+                    newCourse.setIeltsMinBandScore(dto.getIeltsMinBandScore());
+                    newCourse.setToeflMinScore(dto.getToeflMinScore());
+                    newCourse.setToeflMinBandScore(dto.getToeflMinBandScore());
+                    newCourse.setPteMinScore(dto.getPteMinScore());
+                    newCourse.setPteMinBandScore(dto.getPteMinBandScore());
+                    newCourse.setDetMinScore(dto.getDetMinScore());
+                    newCourse.setGreMinScore(dto.getGreMinScore());
+                    newCourse.setGmatMinScore(dto.getGmatMinScore());
+                    newCourse.setSatMinScore(dto.getSatMinScore());
+                    newCourse.setCatMinScore(dto.getCatMinScore());
+                    newCourse.setMin10thScore(dto.getMin10thScore());
+                    newCourse.setMinInterScore(dto.getMinInterScore());
+                    newCourse.setMinGraduationScore(dto.getMinGraduationScore());
+                    newCourse.setScholarshipEligible(dto.getScholarshipEligible());
+                    newCourse.setScholarshipDetails(dto.getScholarshipDetails());
+                    newCourse.setBacklogAcceptanceRange(dto.getBacklogAcceptanceRange());
+                    newCourse.setRemarks(dto.getRemarks());
+                    newCourse.setCreatedAt(LocalDateTime.now());
+                    newCourse.setUpdatedAt(LocalDateTime.now());
+
+                    collegeCourses.add(newCourse);
                 }
             }
+
+            // Step 4: Perform batch insert
+            batchInsert(collegeCourses);
+
+            return "College Courses Uploaded Successfully!";
+        } catch (Exception e) {
+            throw new RuntimeException("Bulk Insert failed!", e);
         }
-        catch (Exception e) {
-            e.printStackTrace();
+    }
+
+    @Transactional
+    public void batchInsert(List<CollegeCourse> courses) {
+        int batchSize = 1000;
+        for (int i = 0; i < courses.size(); i++) {
+            entityManager.persist(courses.get(i));
+
+            if (i % batchSize == 0 && i > 0) {
+                entityManager.flush();
+                entityManager.clear();
+            }
         }
-        System.out.println("Duplicated courses Ids " + duplicates);
-        return "Total courses mapped: " + mapped + " skipped: " + skipped;
+        entityManager.flush();
+        entityManager.clear();
     }
 
     @Override
