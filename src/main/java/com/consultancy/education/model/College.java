@@ -25,7 +25,7 @@ public class College {
     @Column(nullable = false)
     String name;
 
-    @Column(name = "campus_name")
+    @Column(name = "campus_name", columnDefinition = "TEXT")
     String campus;
 
     @Column(name = "campus_code", unique = true, nullable = false)
@@ -75,5 +75,10 @@ public class College {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    public void addCollegeCourse(CollegeCourse collegeCourse) {
+        collegeCourses.add(collegeCourse);
+        collegeCourse.setCollege(this);
     }
 }

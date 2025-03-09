@@ -45,15 +45,16 @@ public class SearchCourseRequestDto {
         List<String> departments;
         List<String> graduationLevels;
         List<String> countries;
-        RatingFilter rating;
-        DateRange dateAdded;
+        List<String> intakeMonths;
+        DurationFilter duration;
 
         @Data
         @AllArgsConstructor
         @NoArgsConstructor
         @FieldDefaults(level = AccessLevel.PRIVATE)
-        public static class RatingFilter {
-            int gte;
+        public static class DurationFilter {
+            int minMonths;
+            int maxMonths;
         }
 
         @Data

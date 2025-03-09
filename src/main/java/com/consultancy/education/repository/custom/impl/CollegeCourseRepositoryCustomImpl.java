@@ -9,7 +9,6 @@ import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositoryCustom {
 
@@ -46,7 +45,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
 
     private long getCountQuery(SearchCourseRequestDto searchCourseRequestDto) {
         // Build the count query dynamically based on the filters
-        StringBuilder countQueryStr = new StringBuilder("SELECT COUNT(DISTINCT cc.id) " +
+            StringBuilder countQueryStr = new StringBuilder("SELECT COUNT(DISTINCT cc.id) " +
                 "FROM college_courses cc " +
                 "INNER JOIN colleges clg ON clg.id = cc.college_id " +
                 "INNER JOIN courses crs ON crs.id = cc.course_id WHERE 1=1 ");
@@ -100,38 +99,41 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
     }
 
     private void addFilterConditions(StringBuilder queryStr, SearchCourseRequestDto searchCourseRequestDto) {
-        // Add filter conditions dynamically based on the filters
+
         if (searchCourseRequestDto.getFilters().getCourses() != null && !searchCourseRequestDto.getFilters().getCourses().isEmpty()) {
-            System.out.println(searchCourseRequestDto.getFilters().getCourses());
             queryStr.append("AND crs.name IN (:courses) ");
         }
         if (searchCourseRequestDto.getFilters().getDepartments() != null && !searchCourseRequestDto.getFilters().getDepartments().isEmpty()) {
-            queryStr.append("AND crs.department IN (:departments) "); // Assuming department is in courses table
+            queryStr.append("AND crs.department IN (:departments) ");
         }
         if (searchCourseRequestDto.getFilters().getGraduationLevels() != null && !searchCourseRequestDto.getFilters().getGraduationLevels().isEmpty()) {
-            queryStr.append("AND crs.graduation_level IN (:graduation_levels) ");
+            queryStr.append("AND crs.graduation_level IN (:graduationLevels) ");
         }
         if (searchCourseRequestDto.getFilters().getCountries() != null && !searchCourseRequestDto.getFilters().getCountries().isEmpty()) {
             queryStr.append("AND clg.country IN (:countries) ");
         }
-//        if (searchCourseRequestDto.getFilters().getRating() != null) {
-//            queryStr.append("AND clg.rating >= :rating ");
-//        }
-//        if (searchCourseRequestDto.getFilters().getDateAdded() != null) {
-//            queryStr.append("AND cc.date_added >= :fromDate AND cc.date_added <= :toDate ");
-//        }
-        if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
-            queryStr.append("AND (crs.name LIKE :searchTerm OR crs.department LIKE :searchTerm) ");
-        }
-    }
 
-    private void addSorting(StringBuilder queryStr, SearchCourseRequestDto searchCourseRequestDto) {
-        if (searchCourseRequestDto.getSort() != null && !searchCourseRequestDto.getSort().isEmpty()) {
-            queryStr.append("ORDER BY ");
-            for (SearchCourseRequestDto.Sort sort : searchCourseRequestDto.getSort()) {
-                queryStr.append(sort.getField()).append(" ").append(sort.getOrder()).append(", ");
+        // Duration filter (with checks)
+        SearchCourseRequestDto.Filters.DurationFilter duration = searchCourseRequestDto.getFilters().getDuration();
+        if (duration != null) {
+            Integer min = duration.getMinMonths();
+            Integer max = duration.getMaxMonths();
+            if (min != null && min > 0) {
+                queryStr.append("AND cc.duration >= :minDuration ");
             }
-            queryStr.setLength(queryStr.length() - 2); // Remove trailing comma
+            if (max != null && max > 0) {
+                queryStr.append("AND cc.duration <= :maxDuration ");
+            }
+        }
+
+        // Intake month filter
+        if (searchCourseRequestDto.getFilters().getIntakeMonths() != null && !searchCourseRequestDto.getFilters().getIntakeMonths().isEmpty()) {
+            queryStr.append("AND EXISTS (SELECT 1 FROM course_intake_months cim WHERE cim.college_course_id = cc.id AND cim.intake_months IN (:intakeMonths)) ");
+        }
+
+        // Search term (case insensitive)
+        if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
+            queryStr.append("AND (LOWER(crs.name) LIKE LOWER(:searchTerm) OR LOWER(crs.department) LIKE LOWER(:searchTerm)) ");
         }
     }
 
@@ -149,17 +151,23 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
             if (searchCourseRequestDto.getFilters().getCountries() != null && !searchCourseRequestDto.getFilters().getCountries().isEmpty()) {
                 query.setParameter("countries", searchCourseRequestDto.getFilters().getCountries());
             }
-//            if (searchCourseRequestDto.getFilters().getRating() != null) {
-//                query.setParameter("rating", searchCourseRequestDto.getFilters().getRating().getGte());
-//            }
-//            if (searchCourseRequestDto.getFilters().getDateAdded() != null) {
-//                query.setParameter("fromDate", searchCourseRequestDto.getFilters().getDateAdded().getFrom());
-//                query.setParameter("toDate", searchCourseRequestDto.getFilters().getDateAdded().getTo());
-//            }
-            if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
-                query.setParameter("searchTerm", "%" + searchCourseRequestDto.getSearch().getTerm() + "%");
+
+            if (searchCourseRequestDto.getFilters().getDuration() != null) {
+                SearchCourseRequestDto.Filters.DurationFilter duration = searchCourseRequestDto.getFilters().getDuration();
+                if (duration.getMinMonths() > 0) {
+                    query.setParameter("minDuration", duration.getMinMonths());
+                }
+                if (duration.getMaxMonths() > 0) {
+                    query.setParameter("maxDuration", duration.getMaxMonths());
+                }
+            }
+            if (searchCourseRequestDto.getFilters().getIntakeMonths() != null && !searchCourseRequestDto.getFilters().getIntakeMonths().isEmpty()) {
+                query.setParameter("intakeMonths", searchCourseRequestDto.getFilters().getIntakeMonths());
             }
         }
-    }
 
+        if (searchCourseRequestDto.getSearch() != null && searchCourseRequestDto.getSearch().getTerm() != null) {
+            query.setParameter("searchTerm", "%" + searchCourseRequestDto.getSearch().getTerm() + "%");
+        }
+    }
 }

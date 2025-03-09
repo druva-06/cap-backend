@@ -8,7 +8,7 @@ import java.util.List;
 public class FormatConverter {
 
     public static Integer cnvrtDurationToInteger(String duration) {
-        String[] parts = duration.split("//s+");
+        String[] parts = duration.trim().split(" ");
         int durationInt;
         try {
             durationInt = Integer.parseInt(parts[0]);

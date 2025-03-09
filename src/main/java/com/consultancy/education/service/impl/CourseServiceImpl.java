@@ -139,7 +139,7 @@ public class CourseServiceImpl implements CourseService {
                 values.append(String.format(
                         "('%s', '%s', '%s', %s, NOW(), NOW()),",
                         escapeSqlString(course.getName()),
-                        escapeSqlString(course.getDepartment()),
+                        (course.getDepartment() != null ? escapeSqlString(course.getDepartment()) : null),
                         escapeSqlString(course.getGraduationLevel().name()), // ENUM stored as String
                         (course.getSpecialization() != null ? "'" + escapeSqlString(course.getSpecialization()) + "'" : "NULL")
                 ));

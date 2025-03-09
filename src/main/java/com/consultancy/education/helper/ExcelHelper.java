@@ -243,8 +243,13 @@ public class ExcelHelper {
                     continue;
                 }
                 row++;
-                CourseRequestDto course = getCourse(courseRow);
-                courseArrayList.add(course);
+                try{
+                    CourseRequestDto course = getCourse(courseRow);
+                    courseArrayList.add(course);
+                }
+                catch (IllegalArgumentException e){
+                    System.out.println(e.getMessage());
+                }
             }
 
             uniqueCourses = courseArrayList.stream().distinct().toList();

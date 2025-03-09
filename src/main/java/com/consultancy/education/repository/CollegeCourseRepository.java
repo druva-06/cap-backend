@@ -18,4 +18,5 @@ public interface CollegeCourseRepository extends JpaRepository<CollegeCourse, Lo
 //    List<Object[]> searchCollegeCourse(String term);
 
 
+
 }

@@ -79,7 +79,7 @@ public class CollegeServiceImpl implements CollegeService {
 
 
             StringBuilder values = new StringBuilder();
-            int batchSize = 1000;
+            int batchSize = 100;
             int count = 0;
             List<String> batchQueries = new ArrayList<>();
 

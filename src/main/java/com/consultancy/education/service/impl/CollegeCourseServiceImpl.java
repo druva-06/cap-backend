@@ -114,6 +114,9 @@ public class CollegeCourseServiceImpl implements CollegeCourseService {
                     newCourse.setCreatedAt(LocalDateTime.now());
                     newCourse.setUpdatedAt(LocalDateTime.now());
 
+//                    college.addCollegeCourse(newCourse);
+//                    course.addCollegeCourse(newCourse);
+
                     collegeCourses.add(newCourse);
                 }
             }

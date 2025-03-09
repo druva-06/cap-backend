@@ -54,4 +54,9 @@ public class Course {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    public void addCollegeCourse(CollegeCourse collegeCourse) {
+        collegeCourses.add(collegeCourse);
+        collegeCourse.setCourse(this);
+    }
 }

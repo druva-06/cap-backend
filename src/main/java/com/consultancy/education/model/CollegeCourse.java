@@ -27,7 +27,7 @@ public class CollegeCourse {
     Integer duration;
 
     @ElementCollection(targetClass = Month.class)
-    @CollectionTable(name = "course_intake_months", joinColumns = @JoinColumn(name = "course_id"))
+    @CollectionTable(name = "course_intake_months", joinColumns = @JoinColumn(name = "college_course_id"))
     @Enumerated(EnumType.STRING)
     @Column(name = "intake_months", nullable = false)
     List<Month> intakeMonths;
