@@ -68,9 +68,17 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         StringBuilder queryStr = new StringBuilder("SELECT DISTINCT " +
                 "cc.id AS collegeCourseId, " +
                 "cc.college_id AS collegeId, " +
-                "cc.course_id AS courseId, " +
                 "clg.name AS collegeName, " +
-                "crs.name AS courseName " +
+                "cc.course_id AS courseId, " +
+                "crs.name AS courseName, " +
+                "clg.campus_code AS campusCode, " +
+                "clg.campus_name AS campusName, " +
+                "clg.country AS country, " +
+                "crs.graduation_level AS graduationLevel, " +
+                "clg.college_logo AS collegeImage, " +
+                "cc.intake_year AS intakeYear, " +
+                "cc.tuition_fee AS tuitionFee, " +
+                "clg.established_year AS establishedYear " +
                 "FROM college_courses cc " +
                 "INNER JOIN colleges clg ON clg.id = cc.college_id " +
                 "INNER JOIN courses crs ON crs.id = cc.course_id WHERE 1=1 ");
