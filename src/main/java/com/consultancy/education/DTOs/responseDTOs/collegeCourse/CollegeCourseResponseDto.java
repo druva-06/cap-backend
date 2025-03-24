@@ -26,4 +26,5 @@ public class CollegeCourseResponseDto {
     Integer intakeYear;
     String tuitionFee;
     Integer establishedYear;
+    String intakeMonths;
 }

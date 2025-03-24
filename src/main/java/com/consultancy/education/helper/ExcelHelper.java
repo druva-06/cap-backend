@@ -1,12 +1,10 @@
 package com.consultancy.education.helper;
 
-import com.consultancy.education.DTOs.requestDTOs.college.CollegeRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.collegeCourse.CollegeCourseRequestExcelDto;
 import com.consultancy.education.DTOs.requestDTOs.course.CourseRequestDto;
 import com.consultancy.education.enums.GraduationLevel;
 import com.consultancy.education.exception.ExcelException;
 import com.consultancy.education.model.College;
-import com.consultancy.education.model.Course;
 import com.consultancy.education.utils.BasicValidations;
 import com.consultancy.education.utils.FormatConverter;
 import org.apache.poi.ss.usermodel.Cell;
@@ -17,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class ExcelHelper {
 
@@ -138,85 +135,85 @@ public class ExcelHelper {
                 case 10:
                     collegeCourseRequestExcelDto.setCourseName(basicValidations.validateString(cell));
                     break;
-                case 11:
+                case 12:
                     collegeCourseRequestExcelDto.setDepartment(basicValidations.validateString(cell));
                     break;
-                case 12:
+                case 13:
                     collegeCourseRequestExcelDto.setGraduationLevel(basicValidations.validateString(cell));
                     break;
-                case 13:
+                case 14:
                     collegeCourseRequestExcelDto.setCourseUrl(basicValidations.validateString(cell));
                     break;
-                case 14:
+                case 15:
                     collegeCourseRequestExcelDto.setDuration(basicValidations.validateString(cell));
                     break;
-                case 15:
+                case 16:
                     collegeCourseRequestExcelDto.setIntakeMonths(basicValidations.validateString(cell));
                     break;
-                case 16:
+                case 17:
                     collegeCourseRequestExcelDto.setIntakeYear(basicValidations.validateInteger(cell));
                     break;
-                case 17:
+                case 18:
                     collegeCourseRequestExcelDto.setEligibilityCriteria(basicValidations.validateString(cell));
                     break;
-                case 18:
+                case 19:
                     collegeCourseRequestExcelDto.setApplicationFee(basicValidations.validateString(cell));
                     break;
-                case 19:
+                case 20:
                     collegeCourseRequestExcelDto.setTuitionFee(String.valueOf(basicValidations.validateDouble(cell)));
                     break;
-                case 20:
+                case 21:
                     collegeCourseRequestExcelDto.setIeltsMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 21:
+                case 22:
                     collegeCourseRequestExcelDto.setIeltsMinBandScore(basicValidations.validateDouble(cell));
                     break;
-                case 22:
+                case 23:
                     collegeCourseRequestExcelDto.setToeflMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 23:
+                case 24:
                     collegeCourseRequestExcelDto.setToeflMinBandScore(basicValidations.validateDouble(cell));
                     break;
-                case 24:
+                case 25:
                     collegeCourseRequestExcelDto.setPteMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 25:
+                case 26:
                     collegeCourseRequestExcelDto.setPteMinBandScore(basicValidations.validateDouble(cell));
                     break;
-                case 26:
+                case 27:
                     collegeCourseRequestExcelDto.setDetMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 27:
+                case 28:
                     collegeCourseRequestExcelDto.setGreMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 28:
+                case 29:
                     collegeCourseRequestExcelDto.setGmatMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 29:
+                case 30:
                     collegeCourseRequestExcelDto.setSatMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 30:
+                case 31:
                     collegeCourseRequestExcelDto.setCatMinScore(basicValidations.validateDouble(cell));
                     break;
-                case 31:
+                case 32:
                     collegeCourseRequestExcelDto.setMin10thScore(FormatConverter.cnvrtPercentageToDouble(basicValidations.validateString(cell)));
                     break;
-                case 32:
+                case 33:
                     collegeCourseRequestExcelDto.setMinInterScore(FormatConverter.cnvrtPercentageToDouble(basicValidations.validateString(cell)));
                     break;
-                case 33:
+                case 34:
                     collegeCourseRequestExcelDto.setMinGraduationScore(FormatConverter.cnvrtPercentageToDouble(basicValidations.validateString(cell)));
                     break;
-                case 34:
+                case 35:
                     collegeCourseRequestExcelDto.setScholarshipEligible(basicValidations.validateString(cell));
                     break;
-                case 35:
+                case 36:
                     collegeCourseRequestExcelDto.setScholarshipDetails(basicValidations.validateString(cell));
                     break;
-                case 36:
+                case 37:
                     collegeCourseRequestExcelDto.setBacklogAcceptanceRange(basicValidations.validateString(cell));
                     break;
-                case 37:
+                case 38:
                     collegeCourseRequestExcelDto.setRemarks(basicValidations.validateString(cell));
                     break;
                 default:
@@ -232,7 +229,7 @@ public class ExcelHelper {
 
         try{
             XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
-            XSSFSheet sheet = workbook.getSheetAt(0);
+            XSSFSheet sheet = workbook.getSheet("colleges");
             Iterator<Row> courses = sheet.iterator();
             List<CourseRequestDto> courseArrayList = new ArrayList<>();
             int row = 0;
@@ -245,6 +242,9 @@ public class ExcelHelper {
                 row++;
                 try{
                     CourseRequestDto course = getCourse(courseRow);
+                    if(course.getName() == null){
+                        break;
+                    }
                     courseArrayList.add(course);
                 }
                 catch (IllegalArgumentException e){
@@ -278,6 +278,7 @@ public class ExcelHelper {
                     course.setDepartment(basicValidations.validateString(cell));
                     break;
                 case 13:
+                    if(basicValidations.validateString(cell) == null) break;
                     course.setGraduationLevel(GraduationLevel.valueOf(basicValidations.validateString(cell).toUpperCase()));
                     break;
                 default:

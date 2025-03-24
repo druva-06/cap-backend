@@ -78,16 +78,21 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
                 "clg.college_logo AS collegeImage, " +
                 "cc.intake_year AS intakeYear, " +
                 "cc.tuition_fee AS tuitionFee, " +
-                "clg.established_year AS establishedYear " +
+                "clg.established_year AS establishedYear, " +
+                "GROUP_CONCAT(cim.intake_months ORDER BY cim.intake_months) AS intakeMonths " +
                 "FROM college_courses cc " +
                 "INNER JOIN colleges clg ON clg.id = cc.college_id " +
-                "INNER JOIN courses crs ON crs.id = cc.course_id WHERE 1=1 ");
+                "INNER JOIN courses crs ON crs.id = cc.course_id " +
+                "LEFT JOIN course_intake_months cim ON cim.college_course_id = cc.id " +
+                "WHERE 1=1 ");
+
 
         // Add conditions for the main query
         addFilterConditions(queryStr, searchCourseRequestDto);
 
-        // Add sorting
-        //addSorting(queryStr, searchCourseRequestDto);
+        // ➡️ Add group by after filters
+        queryStr.append(" GROUP BY cc.id, clg.name, crs.name, clg.campus_code, clg.campus_name, clg.country, " +
+                "crs.graduation_level, clg.college_logo, cc.intake_year, cc.tuition_fee, clg.established_year ");
 
         // Add pagination if available
         if (searchCourseRequestDto.getPagination() != null) {
