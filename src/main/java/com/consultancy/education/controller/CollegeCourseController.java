@@ -7,6 +7,12 @@ import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.response.ApiFailureResponse;
 import com.consultancy.education.response.ApiSuccessResponse;
 import com.consultancy.education.service.CollegeCourseService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +22,7 @@ import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/college-course")
+@Tag(name = "College Course Controller", description = "Handles all college course related operations")
 public class CollegeCourseController {
 
     private final CollegeCourseService collegeCourseService;
@@ -52,6 +59,12 @@ public class CollegeCourseController {
     }
 
     @GetMapping("/collegeCourseDetail/{collegeCourseId}")
+    @Operation(summary = "Get college course by ID", description = "Retrieve college course by its unique ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "College course found",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CollegeCourseResponseDto.class)))
+    })
     public ResponseEntity<?> getCollegeCourseDetail(@PathVariable Long collegeCourseId) {
         try{
             CollegeCourseResponseDto collegeCourseResponseDto = collegeCourseService.getCollegeCourseDetail(collegeCourseId);
