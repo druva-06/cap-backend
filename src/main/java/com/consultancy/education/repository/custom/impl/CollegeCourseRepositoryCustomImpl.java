@@ -1,7 +1,7 @@
 package com.consultancy.education.repository.custom.impl;
 
 import com.consultancy.education.DTOs.requestDTOs.search.SearchCourseRequestDto;
-import com.consultancy.education.DTOs.responseDTOs.collegeCourse.CollegeCourseResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.collegeCourse.SearchCollegeCourseResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.search.SearchCourseResponseDto;
 import com.consultancy.education.repository.custom.CollegeCourseRepositoryCustom;
 import jakarta.persistence.EntityManager;
@@ -16,7 +16,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
     private EntityManager entityManager;
 
     @Override
-    public SearchCourseResponseDto<CollegeCourseResponseDto> searchCollegeCourses(SearchCourseRequestDto searchCourseRequestDto) {
+    public SearchCourseResponseDto<SearchCollegeCourseResponseDto> searchCollegeCourses(SearchCourseRequestDto searchCourseRequestDto) {
         // Get the total rows count
         long totalRows = getCountQuery(searchCourseRequestDto);
 
@@ -25,7 +25,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         int totalPages = (int) Math.ceil((double) totalRows / limitPerPage);
 
         // Get the paginated query results
-        List<CollegeCourseResponseDto> result = getPaginatedQuery(searchCourseRequestDto);
+        List<SearchCollegeCourseResponseDto> result = getPaginatedQuery(searchCourseRequestDto);
 
         // Create a Pagination object
         SearchCourseResponseDto.Pagination pagination = new SearchCourseResponseDto.Pagination(
@@ -36,7 +36,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         );
 
         // Create the final response object
-        SearchCourseResponseDto<CollegeCourseResponseDto> response = new SearchCourseResponseDto<>();
+        SearchCourseResponseDto<SearchCollegeCourseResponseDto> response = new SearchCourseResponseDto<>();
         response.setData(result);
         response.setPagination(pagination);
 
@@ -63,7 +63,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         return ((Number) countQuery.getSingleResult()).longValue();
     }
 
-    private List<CollegeCourseResponseDto> getPaginatedQuery(SearchCourseRequestDto searchCourseRequestDto) {
+    private List<SearchCollegeCourseResponseDto> getPaginatedQuery(SearchCourseRequestDto searchCourseRequestDto) {
         // Build the query dynamically for the paginated results
         StringBuilder queryStr = new StringBuilder("SELECT DISTINCT " +
                 "cc.id AS collegeCourseId, " +
@@ -102,7 +102,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
         }
 
         // Execute the query and set parameters dynamically
-        Query query = entityManager.createNativeQuery(queryStr.toString(), CollegeCourseResponseDto.class);
+        Query query = entityManager.createNativeQuery(queryStr.toString(), SearchCollegeCourseResponseDto.class);
 
         // Set parameters dynamically for the main query
         setQueryParameters(query, searchCourseRequestDto);

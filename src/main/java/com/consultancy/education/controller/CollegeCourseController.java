@@ -2,6 +2,7 @@ package com.consultancy.education.controller;
 
 import com.consultancy.education.DTOs.requestDTOs.search.SearchCourseRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.collegeCourse.CollegeCourseResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.collegeCourse.SearchCollegeCourseResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.search.SearchCourseResponseDto;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.response.ApiFailureResponse;
@@ -48,7 +49,7 @@ public class CollegeCourseController {
     @PostMapping("/collegeCourses")
     public ResponseEntity<?> getCollegeCourses(@RequestBody SearchCourseRequestDto searchCourseRequestDto) {
         try{
-            SearchCourseResponseDto<CollegeCourseResponseDto> searchCourseResponseDto = collegeCourseService.getCollegeCourses(searchCourseRequestDto);
+            SearchCourseResponseDto<SearchCollegeCourseResponseDto> searchCourseResponseDto = collegeCourseService.getCollegeCourses(searchCourseRequestDto);
             return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(searchCourseResponseDto, "College courses fetched successfully", 200));
         }
         catch (NotFoundException e){

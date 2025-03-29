@@ -4,6 +4,7 @@ import com.consultancy.education.DTOs.requestDTOs.collegeCourse.CollegeCourseReq
 import com.consultancy.education.DTOs.requestDTOs.search.SearchCourseRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.college.CollegeResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.collegeCourse.CollegeCourseResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.collegeCourse.SearchCollegeCourseResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.course.CourseResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.currency.CurrencyResponseDTO;
 import com.consultancy.education.DTOs.responseDTOs.search.SearchCourseResponseDto;
@@ -151,7 +152,7 @@ public class CollegeCourseServiceImpl implements CollegeCourseService {
     }
 
     @Override
-    public SearchCourseResponseDto<CollegeCourseResponseDto> getCollegeCourses(SearchCourseRequestDto searchCourseRequestDto) {
+    public SearchCourseResponseDto<SearchCollegeCourseResponseDto> getCollegeCourses(SearchCourseRequestDto searchCourseRequestDto) {
         return collegeCourseRepository.searchCollegeCourses(searchCourseRequestDto);
     }
 
