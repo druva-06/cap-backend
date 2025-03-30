@@ -3,11 +3,8 @@ package com.consultancy.education.model;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.w3c.dom.Text;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -62,9 +59,6 @@ public class College {
     @OneToOne
     Seo seo;
 
-    @OneToMany(mappedBy = "college", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CollegeCourse> collegeCourses = new ArrayList<>();
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -75,10 +69,5 @@ public class College {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public void addCollegeCourse(CollegeCourse collegeCourse) {
-        collegeCourses.add(collegeCourse);
-        collegeCourse.setCollege(this);
     }
 }

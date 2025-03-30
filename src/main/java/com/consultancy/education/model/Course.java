@@ -6,8 +6,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Table(name = "courses", uniqueConstraints = @UniqueConstraint(columnNames = {"name", "department", "graduation_level"}))
@@ -41,9 +39,6 @@ public class Course {
     @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt;
 
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<CollegeCourse> collegeCourses = new ArrayList<>();
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
@@ -53,10 +48,5 @@ public class Course {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-    }
-
-    public void addCollegeCourse(CollegeCourse collegeCourse) {
-        collegeCourses.add(collegeCourse);
-        collegeCourse.setCourse(this);
     }
 }
