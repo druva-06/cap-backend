@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: career-advice-point-backend
+
+  jackson:
+    date-format: dd/MM/yyyy
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+  profiles:
+    active: uat
+
+server:
+  servlet:
+    context-path: /api

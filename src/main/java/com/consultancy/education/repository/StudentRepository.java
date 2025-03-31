@@ -13,7 +13,7 @@ public interface StudentRepository extends JpaRepository<Student, Long> {
 
     Student findByPhoneNumber(String phoneNumber);
 
-    Student findByAadhaarNumber(String aadhaarNumber);
-
-    Student findByPassportNumber(String passportNumber);
+//    Student findByAadhaarNumber(String aadhaarNumber);
+//
+//    Student findByPassportNumber(String passportNumber);
 }

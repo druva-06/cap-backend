@@ -69,38 +69,38 @@ public class StudentValidations {
     }
 
     public String isAadhaarUnique(String aadhaar, Long id) {
-        Student student = studentRepository.findByAadhaarNumber(aadhaar);
-        if(student != null) {
-            if(id != null){
-                if(student.getId().equals(id)) {
-                    return null;
-                }
-                else{
-                    return "Aadhaar number is already registered";
-                }
-            }
-            else{
-                return "Aadhaar number is already registered";
-            }
-        }
+//        Student student = studentRepository.findByAadhaarNumber(aadhaar);
+//        if(student != null) {
+//            if(id != null){
+//                if(student.getId().equals(id)) {
+//                    return null;
+//                }
+//                else{
+//                    return "Aadhaar number is already registered";
+//                }
+//            }
+//            else{
+//                return "Aadhaar number is already registered";
+//            }
+//        }
         return null;
     }
 
     public String isPassportUnique(String passport, Long id) {
-        Student student = studentRepository.findByPassportNumber(passport);
-        if(student != null) {
-            if(id != null){
-                if(student.getId().equals(id)) {
-                    return null;
-                }
-                else{
-                    return "Passport number is already registered";
-                }
-            }
-            else{
-                return "Passport number is already registered";
-            }
-        }
+//        Student student = studentRepository.findByPassportNumber(passport);
+//        if(student != null) {
+//            if(id != null){
+//                if(student.getId().equals(id)) {
+//                    return null;
+//                }
+//                else{
+//                    return "Passport number is already registered";
+//                }
+//            }
+//            else{
+//                return "Passport number is already registered";
+//            }
+//        }
         return null;
     }
 
@@ -117,12 +117,12 @@ public class StudentValidations {
         if(isPhoneUnique(student.getPhoneNumber(), null)!=null) {
             errors.add("phone number is already registered");
         }
-        if(isAadhaarUnique(student.getAadhaarNumber(), null)!=null) {
-            errors.add("aadhaar is already registered");
-        }
-        if(isPassportUnique(student.getPassportNumber(), null)!=null) {
-            errors.add("passport is already registered");
-        }
+//        if(isAadhaarUnique(student.getAadhaarNumber(), null)!=null) {
+//            errors.add("aadhaar is already registered");
+//        }
+//        if(isPassportUnique(student.getPassportNumber(), null)!=null) {
+//            errors.add("passport is already registered");
+//        }
 
         return errors;
     }
@@ -140,12 +140,12 @@ public class StudentValidations {
         if(isPhoneUnique(student.getPhoneNumber(), id)!=null) {
             errors.add("phone number is already registered");
         }
-        if(isAadhaarUnique(student.getAadhaarNumber(), id)!=null) {
-            errors.add("aadhaar is already registered");
-        }
-        if(isPassportUnique(student.getPassportNumber(), id)!=null) {
-            errors.add("passport is already registered");
-        }
+//        if(isAadhaarUnique(student.getAadhaarNumber(), id)!=null) {
+//            errors.add("aadhaar is already registered");
+//        }
+//        if(isPassportUnique(student.getPassportNumber(), id)!=null) {
+//            errors.add("passport is already registered");
+//        }
 
         return errors;
     }

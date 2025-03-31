@@ -27,50 +27,53 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDto addUser(UserRequestDto userRequestDto) {
-        boolean existsByEmail = userRepository.existsByEmail(userRequestDto.getEmail());
-        boolean existsByPhoneNumber = userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber());
-        if(existsByEmail || existsByPhoneNumber){
-            List<String> errors = new ArrayList<>();
-            if(existsByEmail){
-                errors.add("Email already exists");
-            }
-            if(existsByPhoneNumber){
-                errors.add("Phone number already exists");
-            }
-            throw new AlreadyExistException(errors);
-        }
-        User user = UserTransformer.toEntity(userRequestDto);
-        user = userRepository.save(user);
-        return UserTransformer.toResDTO(user);
+//        boolean existsByEmail = userRepository.existsByEmail(userRequestDto.getEmail());
+//        boolean existsByPhoneNumber = userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber());
+//        if(existsByEmail || existsByPhoneNumber){
+//            List<String> errors = new ArrayList<>();
+//            if(existsByEmail){
+//                errors.add("Email already exists");
+//            }
+//            if(existsByPhoneNumber){
+//                errors.add("Phone number already exists");
+//            }
+//            throw new AlreadyExistException(errors);
+//        }
+//        User user = UserTransformer.toEntity(userRequestDto);
+//        user = userRepository.save(user);
+//        return UserTransformer.toResDTO(user);
+        return null;
     }
 
     @Override
     public UserResponseDto updateUser(UserRequestDto userRequestDto, Long userId) {
-        if(userRepository.findById(userId).isPresent()){
-            User user1 =  userRepository.findByEmail(userRequestDto.getEmail());
-            User user2 =  userRepository.findByPhoneNumber(userRequestDto.getPhoneNumber());
-            List<String> errors = UserValidations.checkEmailAndPhoneExist(userId, user1, user2);
-            if (!errors.isEmpty()) {
-                throw new AlreadyExistException(errors);
-            }
-            User user = userRepository.findById(userId).get();
-            UserTransformer.updateUser(user, userRequestDto);
-            user = userRepository.save(user);
-            return UserTransformer.toResDTO(user);
-        }
-        else{
-            throw new NotFoundException("User not found");
-        }
+//        if(userRepository.findById(userId).isPresent()){
+//            User user1 =  userRepository.findByEmail(userRequestDto.getEmail());
+//            User user2 =  userRepository.findByPhoneNumber(userRequestDto.getPhoneNumber());
+//            List<String> errors = UserValidations.checkEmailAndPhoneExist(userId, user1, user2);
+//            if (!errors.isEmpty()) {
+//                throw new AlreadyExistException(errors);
+//            }
+//            User user = userRepository.findById(userId).get();
+//            UserTransformer.updateUser(user, userRequestDto);
+//            user = userRepository.save(user);
+//            return UserTransformer.toResDTO(user);
+//        }
+//        else{
+//            throw new NotFoundException("User not found");
+//        }
+        return null;
     }
 
     @Override
     public UserResponseDto getUser(Long userId) {
-        if(userRepository.findById(userId).isPresent()){
-            return UserTransformer.toResDTO(userRepository.findById(userId).get());
-        }
-        else{
-            throw new NotFoundException("User not found");
-        }
+//        if(userRepository.findById(userId).isPresent()){
+//            return UserTransformer.toResDTO(userRepository.findById(userId).get());
+//        }
+//        else{
+//            throw new NotFoundException("User not found");
+//        }
+        return null;
     }
 
 }

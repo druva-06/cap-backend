@@ -1,9 +1,6 @@
 package com.consultancy.education.DTOs.responseDTOs.user;
 
-import com.consultancy.education.enums.UserType;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.validation.constraints.*;
+import com.consultancy.education.enums.Role;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -19,5 +16,5 @@ public class UserResponseDto {
     String phoneNumber;
     String designation;
     String profilePicture;
-    UserType type;
+    Role role;
 }
