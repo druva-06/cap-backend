@@ -158,4 +158,44 @@ public class UserAuthServiceImpl implements UserAuthService {
             throw new CustomException(e.awsErrorDetails().errorMessage());
         }
     }
+
+    @Override
+    public String forgotPassword(String email) {
+        try {
+            String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
+
+            ForgotPasswordRequest forgotRequest = ForgotPasswordRequest.builder()
+                    .clientId(clientId)
+                    .username(email)
+                    .secretHash(secretHash)
+                    .build();
+
+            cognitoClient.forgotPassword(forgotRequest);
+            return "Password reset code has been sent to your email.";
+        } catch (CognitoIdentityProviderException e) {
+            log.error("Error requesting password reset: {}", e.awsErrorDetails().errorMessage());
+            throw new CustomException(e.awsErrorDetails().errorMessage());
+        }
+    }
+
+    @Override
+    public String confirmForgotPassword(String email, String confirmationCode, String newPassword) {
+        try {
+            String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
+
+            ConfirmForgotPasswordRequest confirmRequest = ConfirmForgotPasswordRequest.builder()
+                    .clientId(clientId)
+                    .username(email)
+                    .confirmationCode(confirmationCode)
+                    .password(newPassword) // New password
+                    .secretHash(secretHash) // Include SECRET_HASH
+                    .build();
+
+            cognitoClient.confirmForgotPassword(confirmRequest);
+            return "Password has been successfully reset.";
+        } catch (CognitoIdentityProviderException e) {
+            log.error("Error confirming password reset: {}", e.awsErrorDetails().errorMessage());
+            throw new CustomException(e.awsErrorDetails().errorMessage());
+        }
+    }
 }

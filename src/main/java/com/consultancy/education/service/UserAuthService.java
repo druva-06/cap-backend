@@ -14,4 +14,8 @@ public interface UserAuthService {
     String resendVerificationCode(String email);
 
     String confirmVerificationCode(String email, String verificationCode);
+
+    String forgotPassword(String email);
+
+    String confirmForgotPassword(String email, String confirmationCode, String newPassword);
 }

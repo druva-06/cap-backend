@@ -15,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.services.cognitoidentityprovider.endpoints.internal.Value;
 
 import java.util.ArrayList;
 
@@ -113,6 +114,50 @@ public class UserAuthController {
         }
         catch (Exception e){
             log.error("Confirm errors occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        }
+    }
+
+    @GetMapping("/forgotPassword/{email}")
+    public ResponseEntity<?> forgotPassword(@PathVariable String email){
+        log.info("Forgot password request received: {}", email);
+        try {
+            String response = userAuthService.forgotPassword(email);
+            log.info("Forgot password response: {}", response);
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(response, "Forgot password verification code successfully!", 200));
+        }
+        catch (NotFoundException e){
+            log.error("Cognito forgot password email not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
+        }
+        catch (CustomException e){
+            log.error("Cognito forgot password errors occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
+        }
+        catch (Exception e){
+            log.error("Forgot password errors occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        }
+    }
+
+    @GetMapping("/confirmForgotPassword")
+    public ResponseEntity<?> confirmForgotPassword(@RequestParam String email, @RequestParam String confirmationCode, @RequestParam String newPassword){
+       log.info("Confirm password request received: {}", email);
+        try {
+            String response = userAuthService.confirmForgotPassword(email, confirmationCode, newPassword);
+            log.info("Confirm password response: {}", response);
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(response, "Password changed Successfully!", 200));
+        }
+        catch (NotFoundException e){
+            log.error("Cognito confirm forgot password email not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
+        }
+        catch (CustomException e){
+           log.error("Cognito confirm forgot password errors occurred: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
+        }
+        catch (Exception e){
+            log.error("Confirm password errors occurred: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
