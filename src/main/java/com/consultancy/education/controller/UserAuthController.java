@@ -62,7 +62,7 @@ public class UserAuthController {
         try {
             UserAuthLoginResponseDto response = userAuthService.login(userAuthLoginRequestDto);
             log.info("Login response: {}", response);
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(new ArrayList<>(), "Logged Successfully!", 200));
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(response, "Logged Successfully!", 200));
         }
         catch (CustomException e){
             log.error("Cognito Login Validation errors occurred: {}", e.getMessage());
