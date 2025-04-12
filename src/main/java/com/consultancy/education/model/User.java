@@ -9,13 +9,12 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Inheritance(strategy = InheritanceType.JOINED)
-@DiscriminatorColumn(name = "role", discriminatorType = DiscriminatorType.STRING)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public abstract class User {
+@Builder
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
@@ -38,11 +37,18 @@ public abstract class User {
     @Column(name = "profile_picture")
     String profilePicture;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    Role role;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
     LocalDateTime updatedAt;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    Student student;
 
     @PrePersist
     protected void onCreate() {

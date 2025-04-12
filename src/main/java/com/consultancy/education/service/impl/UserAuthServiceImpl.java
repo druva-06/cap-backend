@@ -4,6 +4,8 @@ import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestD
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
 import com.consultancy.education.exception.CustomException;
+import com.consultancy.education.model.Student;
+import com.consultancy.education.model.User;
 import com.consultancy.education.repository.UserRepository;
 import com.consultancy.education.service.UserAuthService;
 import com.consultancy.education.transformer.UserAuthTransformer;
@@ -64,6 +66,11 @@ public class UserAuthServiceImpl implements UserAuthService {
 
         try{
             SignUpResponse response = cognitoClient.signUp(signUpRequest);
+            User user = UserAuthTransformer.toUserEntity(userAuthSignUpRequestDto);
+            Student student = new Student();
+            student.setUser(user);
+            user.setStudent(student);
+            userRepository.save(user);
             log.info("Signup response: {}", response);
             return "User Registered Successfully!";
         }

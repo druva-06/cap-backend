@@ -9,11 +9,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
-@EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "students")
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -21,22 +18,25 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class Student extends User {
+public class Student {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender")
     Gender gender;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "graduation_level", nullable = false)
+    @Column(name = "graduation_level")
     GraduationLevel graduationLevel;
 
-    @Column(name = "date_of_birth", nullable = false)
+    @Column(name = "date_of_birth")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "profile_status", nullable = false)
+    @Column(name = "profile_status")
     ActiveStatus profileActiveStatus;
 
     @Column(name = "alternate_phone_number")
@@ -60,6 +60,10 @@ public class Student extends User {
     @JoinColumn
     @OneToOne
     Seo seo;
+
+    @JoinColumn
+    @OneToOne
+    User user;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Address> addresses;

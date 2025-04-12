@@ -1,6 +1,9 @@
 package com.consultancy.education.transformer;
 
+import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
+import com.consultancy.education.model.User;
 import lombok.extern.slf4j.Slf4j;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InitiateAuthResponse;
 
@@ -14,6 +17,19 @@ public class UserAuthTransformer {
                 .refreshToken(authResponse.authenticationResult().refreshToken())
                 .expiresIn(authResponse.authenticationResult().expiresIn())
                 .tokenType(authResponse.authenticationResult().tokenType())
+                .build();
+    }
+
+    public static User toUserEntity(UserAuthSignUpRequestDto userAuthSignUpRequestDto) {
+        log.info("UserAuthSignUpRequestDto toUserEntity");
+        return User.builder()
+                .firstName(userAuthSignUpRequestDto.getFirstName())
+                .lastName(userAuthSignUpRequestDto.getLastName())
+                .username(userAuthSignUpRequestDto.getUsername())
+                .email(userAuthSignUpRequestDto.getEmail())
+                .phoneNumber(userAuthSignUpRequestDto.getPhoneNumber())
+                .profilePicture(userAuthSignUpRequestDto.getProfilePicture())
+                .role(userAuthSignUpRequestDto.getRole())
                 .build();
     }
 }
