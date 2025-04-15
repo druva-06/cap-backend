@@ -4,8 +4,8 @@ phases:
   install:
     commands:
       - echo "Fetching the PEM file from Secrets Manager"
-      - aws secretsmanager get-secret-value --secret-id cap-dev-ec2-key-pair --query SecretString --output text > /tmp/cap-dev-ec2-key-pair.pem
-      - chmod 400 /tmp/cap-dev-ec2-key-pair.pem
+      - aws secretsmanager get-secret-value --secret-id cap-dev-key-pair --query SecretString --output text > /tmp/cap-dev-key-pair.pem
+      - chmod 400 /tmp/cap-dev-key-pair.pem
 
   build:
     commands:
@@ -15,10 +15,10 @@ phases:
   post_build:
     commands:
       - echo "Copying JAR to EC2..."
-      - scp -o StrictHostKeyChecking=no -i /tmp/cap-dev-ec2-key-pair.pem target/*.jar ubuntu@18.61.21.68:/home/ubuntu/cap-backend-dev.jar
+      - scp -o StrictHostKeyChecking=no -i /tmp/cap-dev-key-pair.pem target/*.jar ubuntu@18.61.21.68:/home/ubuntu/cap-backend-dev.jar
       - echo "Running JAR on EC2..."
       - |
-        ssh -o StrictHostKeyChecking=no -i /tmp/cap-dev-ec2-key-pair.pem ubuntu@18.61.21.68 << 'EOF'
+        ssh -o StrictHostKeyChecking=no -i /tmp/cap-dev-key-pair.pem ubuntu@18.61.21.68 << 'EOF'
           pkill -f "java -jar" || true
           nohup java -jar /home/ubuntu/cap-backend-dev.jar > /home/ubuntu/app.log 2>&1 &
         EOF
