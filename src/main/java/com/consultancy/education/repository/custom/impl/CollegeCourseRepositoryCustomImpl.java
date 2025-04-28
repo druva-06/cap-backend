@@ -159,7 +159,7 @@ public class CollegeCourseRepositoryCustomImpl implements CollegeCourseRepositor
                 query.setParameter("departments", searchCourseRequestDto.getFilters().getDepartments());
             }
             if (searchCourseRequestDto.getFilters().getGraduationLevels() != null && !searchCourseRequestDto.getFilters().getGraduationLevels().isEmpty()) {
-                query.setParameter("graduation_levels", searchCourseRequestDto.getFilters().getGraduationLevels());
+                query.setParameter("graduationLevels", searchCourseRequestDto.getFilters().getGraduationLevels());
             }
             if (searchCourseRequestDto.getFilters().getCountries() != null && !searchCourseRequestDto.getFilters().getCountries().isEmpty()) {
                 query.setParameter("countries", searchCourseRequestDto.getFilters().getCountries());
