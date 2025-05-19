@@ -5,6 +5,7 @@ import com.consultancy.education.DTOs.requestDTOs.student.StudentUpdateRequestDt
 import com.consultancy.education.DTOs.responseDTOs.student.StudentResponseDto;
 import com.consultancy.education.exception.AlreadyExistException;
 import com.consultancy.education.exception.CustomException;
+import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.exception.ValidationException;
 import com.consultancy.education.response.ApiFailureResponse;
 import com.consultancy.education.response.ApiSuccessResponse;
@@ -37,6 +38,9 @@ public class StudentController {
         try{
             StudentResponseDto studentResponseDto = studentService.addStudent(studentRequestDto);
             return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(studentResponseDto, "Student details updated successfully", 200));
+        }
+        catch (NotFoundException e){
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(new ArrayList<>(), e.getMessage(), 200));
         }
         catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));

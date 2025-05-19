@@ -35,9 +35,16 @@ public class StudentServiceImpl implements StudentService {
     public StudentResponseDto addStudent(StudentRequestDto studentRequestDto) throws Exception {
         try{
             Student student = studentRepository.findByUserId(studentRequestDto.getUserId());
+            if(student == null){
+                throw new NotFoundException("User not found");
+            }
             StudentTransformer.updateEntity(student, studentRequestDto);
             studentRepository.save(student);
             return StudentTransformer.toResDTO(student);
+        }
+        catch (NotFoundException e){
+            log.info("User with id " + studentRequestDto.getUserId() + " does not exist");
+            throw new NotFoundException(e.getMessage());
         }
         catch (Exception e){
             log.error("Error while adding student", e);
