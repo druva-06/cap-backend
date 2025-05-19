@@ -1,7 +1,7 @@
 package com.consultancy.education.enums;
 
 public enum DocumentType {
-    AADHAR,
+    AADHAAR,
     PAN,
     PASSPORT,
     BIRTH,

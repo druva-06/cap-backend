@@ -146,7 +146,7 @@ public class UserServiceImpl implements UserService {
                         // Save document url in the database
                         Student student = user.getStudent();
                         switch (DocumentType.valueOf(documentType.toUpperCase())) {
-                            case AADHAR -> student.setAadhaarCardFile(url);
+                            case AADHAAR -> student.setAadhaarCardFile(url);
                             case BIRTH -> student.setBirthCertificateFile(url);
                             case PAN -> student.setPanCardFile(url);
                             case PASSPORT -> student.setPassportFile(url);
