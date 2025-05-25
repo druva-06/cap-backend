@@ -1,42 +1,39 @@
 version: 0.2
 
+env:
+  variables:
+    S3_BUCKET_NAME: career-adivce-partner
+    S3_JAR_KEY: cap-backend-uat.jar
+    EC2_INSTANCE_ID: i-08a40d8c2c9193d3b
+    REGION: ap-south-2
+
 phases:
   install:
     commands:
-      - echo "Fetching the PEM file from Secrets Manager"
-      - |
-        aws secretsmanager get-secret-value --secret-id cap/uat/credentials --query 'SecretString' --output text | jq -r '.["cap-uat-key-pair"]' | awk '
-        BEGIN {print "-----BEGIN RSA PRIVATE KEY-----"}
-        {
-          for(i=1;i<=length;i+=64) print substr($0, i, 64)
-        }
-        END {print "-----END RSA PRIVATE KEY-----"}
-        ' > /tmp/cap-uat-key-pair.pem
-      - ls -l /tmp/                          # Check if PEM file created
-      - chmod 400 /tmp/cap-uat-key-pair.pem
-      - ls -l /tmp/cap-uat-key-pair.pem      # Verify permissions of PEM file
+      - echo "Installing jq and AWS CLI tools if missing..."
+      - yum install -y jq awscli || apt-get install -y jq awscli
 
   build:
     commands:
-      - echo "Building the project..."
+      - echo "Building the Spring Boot application..."
       - mvn clean install
-      - echo "Listing contents of target directory:"
-      - ls -l target/                        # Check if JAR generated
+      - echo "Build completed. Listing target/ directory:"
+      - ls -lh target/
 
   post_build:
     commands:
-      - echo "Checking SSH connectivity to EC2..."
-      - ssh -o StrictHostKeyChecking=no -i /tmp/cap-uat-key-pair.pem ubuntu@18.61.21.68 'echo SSH connection successful'
-      - echo "Listing /opt/cap directory on EC2 before copy:"
-      - ssh -o StrictHostKeyChecking=no -i /tmp/cap-uat-key-pair.pem ubuntu@18.61.21.68 'ls -l /opt/cap || echo "/opt/cap not found"'
-      - echo "Copying JAR to EC2 with verbose SCP..."
-      - scp -v -o StrictHostKeyChecking=no -i /tmp/cap-uat-key-pair.pem target/*.jar ubuntu@18.61.21.68:/opt/cap/cap-backend-uat.jar
-      - echo "Listing /opt/cap directory on EC2 after copy:"
-      - ssh -o StrictHostKeyChecking=no -i /tmp/cap-uat-key-pair.pem ubuntu@18.61.21.68 'ls -l /opt/cap'
-      - echo "Restarting the application on EC2..."
+      - echo "Uploading JAR to S3..."
+      - aws s3 cp target/*.jar s3://$S3_BUCKET_NAME/$S3_JAR_KEY --region $REGION
+      - echo "Triggering SSM Run Command on EC2 instance $EC2_INSTANCE_ID..."
       - |
-        ssh -o StrictHostKeyChecking=no -i /tmp/cap-uat-key-pair.pem ubuntu@18.61.21.68 << 'EOF'
-          pkill -f "java -jar" || true
-          nohup java -jar /opt/cap/cap-backend-uat.jar > /opt/cap/app.log 2>&1 &
-          echo "Application restarted"
-        EOF
+        aws ssm send-command \
+          --instance-ids "$EC2_INSTANCE_ID" \
+          --document-name "AWS-RunShellScript" \
+          --comment "Deploy latest backend JAR" \
+          --parameters 'commands=[
+            "aws s3 cp s3://'"$S3_BUCKET_NAME"'/'"$S3_JAR_KEY"' /opt/cap/cap-backend-uat.jar",
+            "pkill -f java || true",
+            "nohup java -jar /opt/cap/cap-backend-uat.jar > /opt/cap/app.log 2>&1 &"
+          ]' \
+          --region $REGION
+      - echo "Deployment command sent. Monitor execution in SSM console."
