@@ -3,8 +3,16 @@ version: 0.2
 phases:
   install:
     commands:
+      - echo "Installing jq..."
+      - apt-get update
+      - apt-get install -y jq
       - echo "Fetching the PEM file from Secrets Manager"
-      - aws secretsmanager get-secret-value --secret-id cap/uat/credentials --query 'SecretString' --output text
+      - aws secretsmanager get-secret-value --secret-id cap/uat/credentials --query 'SecretString' --output text > /tmp/secret.json
+      - echo "Secret JSON:"
+      - cat /tmp/secret.json
+      - echo "Extracting PEM key..."
+      - jq -r '.["cap-uat-key-pair"]' /tmp/secret.json > /tmp/cap-uat-key-pair.pem
+      - ls -l /tmp/cap-uat-key-pair.pem
       - chmod 400 /tmp/cap-uat-key-pair.pem
 
   build:
