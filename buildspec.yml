@@ -4,7 +4,7 @@ phases:
   install:
     commands:
       - echo "Fetching the PEM file from Secrets Manager"
-      - aws secretsmanager get-secret-value --secret-id cap/uat/credentials --query 'SecretString' --output text | jq -r '.["cap-uat-key-pair"]' > /tmp/cap-uat-key-pair.pem
+      - aws secretsmanager get-secret-value --secret-id cap/uat/credentials --query 'SecretString' --output text
       - chmod 400 /tmp/cap-uat-key-pair.pem
 
   build:
