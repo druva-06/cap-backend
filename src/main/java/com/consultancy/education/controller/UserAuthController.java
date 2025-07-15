@@ -1,5 +1,6 @@
 package com.consultancy.education.controller;
 
+import com.consultancy.education.DTOs.requestDTOs.userAuth.ChangePasswordRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
@@ -158,6 +159,31 @@ public class UserAuthController {
         catch (Exception e){
             log.error("Confirm password errors occurred: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        }
+    }
+
+    @PostMapping("/changePassword")
+    public ResponseEntity<?> changePassword(@RequestBody @Valid ChangePasswordRequestDto changePasswordRequestDto, BindingResult bindingResult, @RequestHeader("Authorization") String authHeader) {
+        log.info("Change password request received.");
+        if (bindingResult.hasErrors()) {
+            log.error("Change password validation errors occurred");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation failed", 400));
+        }
+        try {
+            String jwtToken = authHeader.replace("Bearer ", "");
+            String response = userAuthService.changePassword(jwtToken, changePasswordRequestDto);
+            log.info("Change password response: {}", response);
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new ApiSuccessResponse<>(response, "Password changed successfully!", 200));
+        } catch (CustomException e) {
+            log.error("Change password error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
+        } catch (Exception e) {
+            log.error("Change password internal error: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
 }

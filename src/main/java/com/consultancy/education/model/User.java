@@ -34,6 +34,12 @@ public class User {
     @Column(name = "phone_number", unique = true, nullable = false)
     String phoneNumber;
 
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
+
+    @Column(name = "account_locked")
+    private Boolean accountLocked = false;
+
     @Column(name = "profile_picture")
     String profilePicture;
 

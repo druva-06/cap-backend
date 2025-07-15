@@ -2,6 +2,7 @@ package com.consultancy.education.service.impl;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.consultancy.education.DTOs.requestDTOs.userAuth.ChangePasswordRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
@@ -46,14 +47,13 @@ public class UserAuthServiceImpl implements UserAuthService {
 
     @Override
     public String signup(UserAuthSignUpRequestDto userAuthSignUpRequestDto) {
-        log.info("Signup service started");
+        log.info("Signup service started for email: {}", userAuthSignUpRequestDto.getEmail());
 
         Map<String, AttributeType> attributes = new HashMap<>();
         attributes.put("email", AttributeType.builder().name("email").value(userAuthSignUpRequestDto.getEmail()).build());
         attributes.put("phone_number", AttributeType.builder().name("phone_number").value(userAuthSignUpRequestDto.getPhoneNumber()).build());
         attributes.put("name", AttributeType.builder().name("name").value(userAuthSignUpRequestDto.getFirstName()).build());
         attributes.put("preferred_username", AttributeType.builder().name("preferred_username").value(userAuthSignUpRequestDto.getUsername()).build());
-        attributes.put("custom:role", AttributeType.builder().name("custom:role").value(String.valueOf(userAuthSignUpRequestDto.getRole())).build()); // Store role as custom attribute
 
         String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, userAuthSignUpRequestDto.getEmail());
 
@@ -65,22 +65,34 @@ public class UserAuthServiceImpl implements UserAuthService {
                 .secretHash(secretHash)
                 .build();
 
-        log.info("SignupRequest: {}", signUpRequest);
+        log.debug("SignUpRequest prepared: {}", signUpRequest);
 
-        try{
+        try {
             SignUpResponse response = cognitoClient.signUp(signUpRequest);
+            log.info("User signup request sent to Cognito for email: {}", userAuthSignUpRequestDto.getEmail());
+
+            // Add user to Cognito group
+            String groupName = userAuthSignUpRequestDto.getRole().name();
+            AdminAddUserToGroupRequest groupRequest = AdminAddUserToGroupRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(userAuthSignUpRequestDto.getEmail())
+                    .groupName(groupName)
+                    .build();
+            cognitoClient.adminAddUserToGroup(groupRequest);
+            log.info("User {} added to Cognito group: {}", userAuthSignUpRequestDto.getEmail(), groupName);
+
+            // Save user in local database
             User user = UserAuthTransformer.toUserEntity(userAuthSignUpRequestDto);
             Student student = new Student();
             student.setUser(user);
             user.setStudent(student);
             userRepository.save(user);
-            log.info("Signup response: {}", response);
-            return "User Registered Successfully!";
-        }
-        catch (CognitoIdentityProviderException e){
-            String errorMessage = e.awsErrorDetails().errorMessage();
-            log.error("Signup error: {}", errorMessage);
 
+            log.info("User {} saved in local database", userAuthSignUpRequestDto.getEmail());
+            return "User Registered Successfully!";
+        } catch (CognitoIdentityProviderException e) {
+            String errorMessage = e.awsErrorDetails().errorMessage();
+            log.error("Signup error for email {}: {}", userAuthSignUpRequestDto.getEmail(), errorMessage);
             if (errorMessage.contains("An account with the given email already exists")) {
                 throw new CustomException("User already exists. Please log in.");
             } else if (errorMessage.contains("Invalid email address format")) {
@@ -92,20 +104,29 @@ public class UserAuthServiceImpl implements UserAuthService {
             } else {
                 throw new CustomException(errorMessage);
             }
+        } catch (Exception ex) {
+            log.error("Unexpected error during signup for email {}: {}", userAuthSignUpRequestDto.getEmail(), ex.getMessage(), ex);
+            throw new CustomException("Unexpected error during signup. Please try again.");
         }
     }
 
     @Override
-    public UserAuthLoginResponseDto login(UserAuthLoginRequestDto userAuthLoginRequestDto){
-        log.info("Login service started");
+    public UserAuthLoginResponseDto login(UserAuthLoginRequestDto userAuthLoginRequestDto) {
+        log.info("Login service started for email: {}", userAuthLoginRequestDto.getEmail());
 
-        UserAuthLoginResponseDto userAuthLoginResponseDto = new UserAuthLoginResponseDto();
+        User user = userRepository.findByEmail(userAuthLoginRequestDto.getEmail());
+        if (user != null && Boolean.TRUE.equals(user.getAccountLocked())) {
+            log.warn("Account is locked for user: {}", user.getEmail());
+            throw new CustomException("Account is locked due to too many failed login attempts. Please reset your password or contact support.");
+        }
+
         Map<String, String> authParams = new HashMap<>();
         authParams.put("USERNAME", userAuthLoginRequestDto.getEmail());
         authParams.put("PASSWORD", userAuthLoginRequestDto.getPassword());
         authParams.put("SECRET_HASH", CognitoUtil.calculateSecretHash(clientId, clientSecret, userAuthLoginRequestDto.getEmail()));
 
-        log.info("AuthParams {}", authParams);
+        log.debug("AuthParams: {}", authParams.keySet());
+
         InitiateAuthRequest authRequest = InitiateAuthRequest.builder()
                 .clientId(clientId)
                 .authFlow(AuthFlowType.USER_PASSWORD_AUTH)
@@ -114,19 +135,55 @@ public class UserAuthServiceImpl implements UserAuthService {
 
         try {
             InitiateAuthResponse authResponse = cognitoClient.initiateAuth(authRequest);
-            userAuthLoginResponseDto =  UserAuthTransformer.toLoginResDto(authResponse);
+            log.info("Cognito authentication successful for email: {}", userAuthLoginRequestDto.getEmail());
+
+            // Reset failed attempts
+            if (user != null) {
+                user.setFailedLoginAttempts(0);
+                user.setAccountLocked(false);
+                userRepository.save(user);
+                log.debug("Reset failed login attempts for user: {}", user.getEmail());
+            }
+
+            UserAuthLoginResponseDto userAuthLoginResponseDto = UserAuthTransformer.toLoginResDto(authResponse);
+
             DecodedJWT jwt = JWT.decode(userAuthLoginResponseDto.getIdToken());
             String email = jwt.getClaim("email").asString();
-            if(email == null){
+
+            if (email == null) {
+                log.error("JWT token does not contain email claim for user: {}", userAuthLoginRequestDto.getEmail());
                 throw new CustomException("Invalid JWT Token.");
             }
-            User user = userRepository.findByEmail(email);
+
+            // Find user and map details
+            user = userRepository.findByEmail(email);
+            if (user == null) {
+                log.error("User not found in database for email: {}", email);
+                throw new CustomException("User not found.");
+            }
+
             UserTransformer.intoUserAuthLoginRes(user, userAuthLoginResponseDto);
+
+            log.info("Login process completed successfully for email: {}", email);
+
             return userAuthLoginResponseDto;
         }
-        catch (CognitoIdentityProviderException e){
+        catch (CognitoIdentityProviderException e) {
             String errorMessage = e.awsErrorDetails().errorMessage();
-            log.error("Login error: {}", errorMessage);
+            log.warn("Login failed for email: {}. Reason: {}", userAuthLoginRequestDto.getEmail(), errorMessage);
+
+            // Increase failed attempts for this user
+            if (user != null) {
+                int attempts = user.getFailedLoginAttempts() != null ? user.getFailedLoginAttempts() : 0;
+                attempts++;
+                user.setFailedLoginAttempts(attempts);
+                if (attempts >= 5) {
+                    user.setAccountLocked(true);
+                    log.warn("User account locked due to too many failed attempts: {}", user.getEmail());
+                }
+                userRepository.save(user);
+            }
+
             if (errorMessage.contains("User is not confirmed")) {
                 throw new CustomException("User account is not confirmed. Please verify your email.");
             } else if (errorMessage.contains("Incorrect username or password")) {
@@ -137,28 +194,25 @@ public class UserAuthServiceImpl implements UserAuthService {
                 throw new CustomException(errorMessage);
             }
         }
-    }
-
-    @Override
-    public String resendVerificationCode(String email) {
-        try {
-            String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
-
-            ResendConfirmationCodeRequest resendRequest = ResendConfirmationCodeRequest.builder()
-                    .clientId(clientId)
-                    .username(email)
-                    .secretHash(secretHash)
-                    .build();
-            cognitoClient.resendConfirmationCode(resendRequest);
-            return "Verification code has been resent to your email.";
-        } catch (CognitoIdentityProviderException e) {
-            log.error("Error resending verification code: {}", e.awsErrorDetails().errorMessage());
-            throw new CustomException(e.awsErrorDetails().errorMessage());
+        catch (Exception ex) {
+            log.error("Unexpected error during login for email: {}. Details: {}", userAuthLoginRequestDto.getEmail(), ex.getMessage());
+            throw new CustomException("Internal server error.");
         }
     }
 
     @Override
     public String confirmVerificationCode(String email, String verificationCode) {
+        log.info("Attempting to confirm verification code for email: {}", email);
+
+        if (email == null || email.trim().isEmpty()) {
+            log.warn("Email for verification is null or empty.");
+            throw new CustomException("Email cannot be empty.");
+        }
+        if (verificationCode == null || verificationCode.trim().isEmpty()) {
+            log.warn("Verification code is null or empty for email: {}", email);
+            throw new CustomException("Verification code cannot be empty.");
+        }
+
         try {
             String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
 
@@ -170,15 +224,72 @@ public class UserAuthServiceImpl implements UserAuthService {
                     .build();
 
             cognitoClient.confirmSignUp(confirmRequest);
+
+            log.info("Account successfully verified for email: {}", email);
             return "Account successfully verified.";
         } catch (CognitoIdentityProviderException e) {
-            log.error("Error confirming verification code: {}", e.awsErrorDetails().errorMessage());
-            throw new CustomException(e.awsErrorDetails().errorMessage());
+            String error = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+            log.error("Error confirming verification code for email: {}. Reason: {}", email, error);
+            if (error != null && error.contains("expired")) {
+                throw new CustomException("The verification code has expired. Please request a new code.");
+            } else if (error != null && error.contains("Invalid")) {
+                throw new CustomException("Invalid verification code.");
+            } else if (error != null && error.contains("already confirmed")) {
+                throw new CustomException("Account is already verified. Please log in.");
+            }
+            throw new CustomException("Failed to verify account. " + (error != null ? error : ""));
+        } catch (Exception e) {
+            log.error("Unexpected error while confirming verification for email: {}", email, e);
+            throw new CustomException("An unexpected error occurred. Please try again later.");
+        }
+    }
+
+    @Override
+    public String resendVerificationCode(String email) {
+        log.info("Resend verification code attempt for email: {}", email);
+
+        if (email == null || email.trim().isEmpty()) {
+            log.warn("Resend verification: Email is null or empty.");
+            throw new CustomException("Email cannot be empty.");
+        }
+
+        try {
+            String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
+
+            ResendConfirmationCodeRequest resendRequest = ResendConfirmationCodeRequest.builder()
+                    .clientId(clientId)
+                    .username(email)
+                    .secretHash(secretHash)
+                    .build();
+
+            cognitoClient.resendConfirmationCode(resendRequest);
+
+            log.info("Verification code resent successfully to email: {}", email);
+            return "Verification code has been resent to your email.";
+        } catch (CognitoIdentityProviderException e) {
+            String error = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+            log.error("Error resending verification code for email: {}. Reason: {}", email, error);
+            if (error != null && error.contains("already confirmed")) {
+                throw new CustomException("Account is already verified. Please log in.");
+            } else if (error != null && error.contains("not found")) {
+                throw new CustomException("No account found with this email.");
+            }
+            throw new CustomException("Failed to resend verification code. " + (error != null ? error : ""));
+        } catch (Exception e) {
+            log.error("Unexpected error while resending verification code for email: {}", email, e);
+            throw new CustomException("An unexpected error occurred. Please try again later.");
         }
     }
 
     @Override
     public String forgotPassword(String email) {
+        log.info("Forgot password request for email: {}", email);
+
+        if (email == null || email.trim().isEmpty()) {
+            log.warn("Forgot password: Email is null or empty.");
+            throw new CustomException("Email cannot be empty.");
+        }
+
         try {
             String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
 
@@ -189,15 +300,41 @@ public class UserAuthServiceImpl implements UserAuthService {
                     .build();
 
             cognitoClient.forgotPassword(forgotRequest);
+
+            log.info("Password reset code sent successfully to email: {}", email);
             return "Password reset code has been sent to your email.";
         } catch (CognitoIdentityProviderException e) {
-            log.error("Error requesting password reset: {}", e.awsErrorDetails().errorMessage());
-            throw new CustomException(e.awsErrorDetails().errorMessage());
+            String error = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+            log.error("Error sending password reset code for email: {}. Reason: {}", email, error);
+            if (error != null && error.contains("not found")) {
+                throw new CustomException("No account found with this email.");
+            } else if (error != null && error.contains("User is not confirmed")) {
+                throw new CustomException("User account is not confirmed. Please verify your email.");
+            }
+            throw new CustomException("Failed to send password reset code. " + (error != null ? error : ""));
+        } catch (Exception e) {
+            log.error("Unexpected error during forgot password for email: {}", email, e);
+            throw new CustomException("An unexpected error occurred. Please try again later.");
         }
     }
 
     @Override
     public String confirmForgotPassword(String email, String confirmationCode, String newPassword) {
+        log.info("Confirm forgot password for email: {}", email);
+
+        if (email == null || email.trim().isEmpty()) {
+            log.warn("Confirm forgot password: Email is null or empty.");
+            throw new CustomException("Email cannot be empty.");
+        }
+        if (confirmationCode == null || confirmationCode.trim().isEmpty()) {
+            log.warn("Confirm forgot password: Confirmation code is null or empty for email: {}", email);
+            throw new CustomException("Confirmation code cannot be empty.");
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            log.warn("Confirm forgot password: New password is null or empty for email: {}", email);
+            throw new CustomException("New password cannot be empty.");
+        }
+
         try {
             String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, email);
 
@@ -205,15 +342,47 @@ public class UserAuthServiceImpl implements UserAuthService {
                     .clientId(clientId)
                     .username(email)
                     .confirmationCode(confirmationCode)
-                    .password(newPassword) // New password
-                    .secretHash(secretHash) // Include SECRET_HASH
+                    .password(newPassword)
+                    .secretHash(secretHash)
                     .build();
 
             cognitoClient.confirmForgotPassword(confirmRequest);
+
+            log.info("Password has been reset successfully for email: {}", email);
             return "Password has been successfully reset.";
         } catch (CognitoIdentityProviderException e) {
-            log.error("Error confirming password reset: {}", e.awsErrorDetails().errorMessage());
+            String error = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+            log.error("Error confirming password reset for email: {}. Reason: {}", email, error);
+            if (error != null && error.contains("expired")) {
+                throw new CustomException("The confirmation code has expired. Please request a new code.");
+            } else if (error != null && error.contains("Invalid")) {
+                throw new CustomException("Invalid confirmation code.");
+            }
+            throw new CustomException("Failed to reset password. " + (error != null ? error : ""));
+        } catch (Exception e) {
+            log.error("Unexpected error during confirm forgot password for email: {}", email, e);
+            throw new CustomException("An unexpected error occurred. Please try again later.");
+        }
+    }
+
+    @Override
+    public String changePassword(String jwtToken, ChangePasswordRequestDto changePasswordRequestDto) {
+        log.info("Change password service started.");
+        try {
+            ChangePasswordRequest request = ChangePasswordRequest.builder()
+                    .accessToken(jwtToken)
+                    .previousPassword(changePasswordRequestDto.getOldPassword())
+                    .proposedPassword(changePasswordRequestDto.getNewPassword())
+                    .build();
+            cognitoClient.changePassword(request);
+            log.info("Password changed successfully.");
+            return "Password changed successfully.";
+        } catch (CognitoIdentityProviderException e) {
+            log.error("Cognito error while changing password: {}", e.awsErrorDetails().errorMessage());
             throw new CustomException(e.awsErrorDetails().errorMessage());
+        } catch (Exception e) {
+            log.error("Unexpected error during password change: {}", e.getMessage());
+            throw new CustomException("Unexpected error occurred while changing password.");
         }
     }
 }

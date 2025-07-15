@@ -43,7 +43,7 @@ public class Student {
     String alternatePhoneNumber;
 
     @Column(name = "profile_completion", nullable = false, columnDefinition = "INT DEFAULT 0")
-    Integer profileCompletion;
+    Integer profileCompletion = 0;
 
     @Column(name = "aadhaar_card_file")
     String aadhaarCardFile;
