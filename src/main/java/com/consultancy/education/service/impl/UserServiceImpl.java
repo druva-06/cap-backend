@@ -3,25 +3,18 @@ package com.consultancy.education.service.impl;
 import com.consultancy.education.DTOs.requestDTOs.user.UserRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.user.UserResponseDto;
 import com.consultancy.education.enums.DocumentType;
-import com.consultancy.education.exception.AlreadyExistException;
 import com.consultancy.education.exception.NotFoundException;
-import com.consultancy.education.exception.ValidationException;
-import com.consultancy.education.model.Student;
 import com.consultancy.education.model.User;
 import com.consultancy.education.repository.StudentRepository;
 import com.consultancy.education.repository.UserRepository;
 import com.consultancy.education.service.UserService;
-import com.consultancy.education.transformer.UserTransformer;
-import com.consultancy.education.validations.UserValidations;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
@@ -31,9 +24,6 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -143,17 +133,6 @@ public class UserServiceImpl implements UserService {
                         String url = s3Client.utilities().getUrl(builder -> builder.bucket(bucketName).key(fileKey)).toExternalForm();
                         log.info("Uploaded File: " + url);
 
-                        // Save document url in the database
-                        Student student = user.getStudent();
-                        switch (DocumentType.valueOf(documentType.toUpperCase())) {
-                            case AADHAAR -> student.setAadhaarCardFile(url);
-                            case BIRTH -> student.setBirthCertificateFile(url);
-                            case PAN -> student.setPanCardFile(url);
-                            case PASSPORT -> student.setPassportFile(url);
-                            default -> throw new IllegalArgumentException("Unsupported document type: " + documentType);
-                        }
-
-                        studentRepository.save(student);
                         return "Document uploaded successfully";
                     } catch (IllegalArgumentException e) {
                         log.error("Document type not supported: " + documentType);

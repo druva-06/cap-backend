@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -111,9 +110,6 @@ public class CollegeCourse {
     @JoinColumn
     @ManyToOne
     Course course;
-
-    @OneToMany(mappedBy = "collegeCourse", cascade = CascadeType.ALL, orphanRemoval = true)
-    List<StudentCollegeCourseRegistration> studentCollegeCourseRegistrations = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

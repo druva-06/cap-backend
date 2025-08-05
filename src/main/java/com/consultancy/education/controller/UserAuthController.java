@@ -10,6 +10,7 @@ import com.consultancy.education.response.ApiFailureResponse;
 import com.consultancy.education.response.ApiSuccessResponse;
 import com.consultancy.education.service.UserAuthService;
 import com.consultancy.education.utils.ToMap;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 @Slf4j
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Student Auth Controller", description = "Handles all student authentication related operations")
 public class UserAuthController {
 
     private final UserAuthService userAuthService;

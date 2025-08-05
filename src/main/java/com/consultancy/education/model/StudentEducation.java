@@ -11,66 +11,67 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "student_education")
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class StudentEducation {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "education_level", nullable = false)
+    @Column(nullable = false)
     GraduationLevel educationLevel;
 
-    @Column(name = "institution_name", nullable = false)
+    @Column(nullable = false)
     String institutionName;
 
-    @Column(name = "board", nullable = false)
+    @Column(nullable = false)
     String board;
 
-    @Column(name = "college_code")
     String collegeCode;
 
-    @Column(name = "institution_address", nullable = false)
+    @Column(nullable = false)
     String institutionAddress;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
-    @Column(name = "start_year", nullable = false)
+    @Column(nullable = false)
     LocalDate startYear;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
-    @Column(name = "end_year", nullable = false)
+    @Column(nullable = false)
     LocalDate endYear;
 
-    @Column(name = "percentage", nullable = false)
+    @Column(nullable = false)
     Double percentage;
 
-    @Column(name = "cgpa", nullable = false)
+    @Column(nullable = false)
     Double cgpa;
 
-    @Column(name = "division")
     String division;
 
-    @Column(name = "specialization", nullable = false)
+    @Column(nullable = false)
     String specialization;
 
-    @Column(name = "backlogs", nullable = false)
+    @Column(nullable = false)
     Integer backlogs;
 
-    @Column(name = "certificate")
-    String certificate;
+    // NEW: link to document
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "certificate_document_id")
+    Document certificateDocument;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(nullable = false)
     LocalDateTime updatedAt;
 
-    @JoinColumn
     @ManyToOne
+    @JoinColumn(name = "student_id", nullable = false)
     Student student;
 
     @PrePersist

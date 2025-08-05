@@ -45,18 +45,6 @@ public class Student {
     @Column(name = "profile_completion", nullable = false, columnDefinition = "INT DEFAULT 0")
     Integer profileCompletion = 0;
 
-    @Column(name = "aadhaar_card_file")
-    String aadhaarCardFile;
-
-    @Column(name = "passport_file")
-    String passportFile;
-
-    @Column(name = "pan_card_file")
-    String panCardFile;
-
-    @Column(name = "birth_certificate_file")
-    String birthCertificateFile;
-
     @JoinColumn
     @OneToOne
     Seo seo;

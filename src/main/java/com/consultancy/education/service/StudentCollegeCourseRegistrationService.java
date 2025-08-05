@@ -1,11 +1,20 @@
 package com.consultancy.education.service;
 
+import com.consultancy.education.DTOs.requestDTOs.studentCollegeCourseRegistration.StudentCollegeCourseRegistrationEditRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.studentCollegeCourseRegistration.StudentCollegeCourseRegistrationRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.studentCollegeCourseRegistration.StudentCollegeCourseRegistrationResponseDto;
 
+import java.util.List;
+
 public interface StudentCollegeCourseRegistrationService {
-    StudentCollegeCourseRegistrationResponseDto addStudentCollegeCourseRegistrationController(Long studentId, Long collegeCourseId);
 
-    Long getStudentCollegeCourseRegistrationCount();
+    StudentCollegeCourseRegistrationResponseDto registerStudentForCourse(StudentCollegeCourseRegistrationRequestDto request);
 
-    StudentCollegeCourseRegistrationResponseDto updateStudentCollegeCourseRegistrationStatus(Long studentCollegeCourseId, String status);
+    StudentCollegeCourseRegistrationResponseDto editRegistration(StudentCollegeCourseRegistrationEditRequestDto requestDto);
+
+    StudentCollegeCourseRegistrationResponseDto getRegistrationById(Long registrationId);
+
+    List<StudentCollegeCourseRegistrationResponseDto> getRegistrationsByStudentId(Long studentId);
+
+    StudentCollegeCourseRegistrationResponseDto submitRegistration(Long registrationId);
 }

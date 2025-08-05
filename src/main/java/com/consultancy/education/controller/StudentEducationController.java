@@ -2,12 +2,12 @@ package com.consultancy.education.controller;
 
 import com.consultancy.education.DTOs.requestDTOs.studentEducation.StudentEducationRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.studentEducation.StudentEducationResponseDto;
-import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.response.ApiFailureResponse;
 import com.consultancy.education.response.ApiSuccessResponse;
 import com.consultancy.education.service.StudentEducationService;
 import com.consultancy.education.utils.ToMap;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/student-education")
 public class StudentEducationController {
@@ -27,50 +28,58 @@ public class StudentEducationController {
     }
 
     @PostMapping("/add")
-    public ResponseEntity<?> addStudentEducation(@RequestBody @Valid StudentEducationRequestDto studentEducationRequestDto, BindingResult bindingResult, @RequestParam Long userId) {
+    public ResponseEntity<?> addStudentEducation(@RequestBody @Valid StudentEducationRequestDto dto, BindingResult bindingResult, @RequestParam Long userId) {
+        log.info("Add student education request received: userId={}, payload={}", userId, dto);
         if (bindingResult.hasErrors()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation Failed", 400));
+            log.error("Validation errors in addStudentEducation: {}", bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation failed", 400));
         }
-        try{
-            StudentEducationResponseDto studentEducationResponseDto = studentEducationService.addStudentEducation(studentEducationRequestDto, userId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse<>(studentEducationResponseDto, "Student education added successfully", 201));
-        }
-        catch (NotFoundException e){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
-        }
-        catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        try {
+            StudentEducationResponseDto response = studentEducationService.addStudentEducation(dto, userId);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse<>(response, "Student education added successfully", 201));
+        } catch (Exception e) {
+            log.error("Error in addStudentEducation", e);
+            return ResponseEntity.internalServerError().body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
 
     @PutMapping("/update")
-    public ResponseEntity<?> updateStudentEducation(@RequestBody @Valid StudentEducationRequestDto studentEducationRequestDto, @RequestParam Long studentEducationId, BindingResult bindingResult) {
+    public ResponseEntity<?> updateStudentEducation(@RequestBody @Valid StudentEducationRequestDto dto, @RequestParam Long educationId, BindingResult bindingResult) {
+        log.info("Update student education request: educationId={}, payload={}", educationId, dto);
         if (bindingResult.hasErrors()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation Failed", 400));
+            log.error("Validation errors in updateStudentEducation: {}", bindingResult.getAllErrors());
+            return ResponseEntity.badRequest().body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation failed", 400));
         }
-        try{
-            StudentEducationResponseDto studentEducationResponseDto = studentEducationService.updateStudentEducation(studentEducationRequestDto, studentEducationId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiSuccessResponse<>(studentEducationResponseDto, "Student education updated successfully", 201));
+        try {
+            StudentEducationResponseDto response = studentEducationService.updateStudentEducation(dto, educationId);
+            return ResponseEntity.ok(new ApiSuccessResponse<>(response, "Student education updated successfully", 200));
+        } catch (Exception e) {
+            log.error("Error in updateStudentEducation", e);
+            return ResponseEntity.internalServerError().body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
-        catch (NotFoundException e){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
-        }
-        catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteStudentEducation(@RequestParam Long educationId) {
+        log.info("Delete student education request: educationId={}", educationId);
+        try {
+            studentEducationService.deleteStudentEducation(educationId);
+            return ResponseEntity.ok(new ApiSuccessResponse<>(null, "Student education deleted successfully", 200));
+        } catch (Exception e) {
+            log.error("Error in deleteStudentEducation", e);
+            return ResponseEntity.internalServerError().body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
 
     @GetMapping("/get")
-    public ResponseEntity<?> getStudentEducationById(@RequestParam Long userId) {
-        try{
-            List<StudentEducationResponseDto> studentEducationResponseDtos = studentEducationService.getStudentEducation(userId);
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(studentEducationResponseDtos, "Student education fetched successfully", 200));
-        }
-        catch (NotFoundException e){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
-        }
-        catch (Exception e){
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+    public ResponseEntity<?> getStudentEducation(@RequestParam Long userId) {
+        log.info("Get student education request: userId={}", userId);
+        try {
+            List<StudentEducationResponseDto> result = studentEducationService.getStudentEducation(userId);
+            return ResponseEntity.ok(new ApiSuccessResponse<>(result, "Student education fetched successfully", 200));
+        } catch (Exception e) {
+            log.error("Error in getStudentEducation", e);
+            return ResponseEntity.internalServerError().body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
 }

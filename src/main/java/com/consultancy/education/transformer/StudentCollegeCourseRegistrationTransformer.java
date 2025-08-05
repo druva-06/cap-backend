@@ -1,19 +1,29 @@
 package com.consultancy.education.transformer;
 
 import com.consultancy.education.DTOs.responseDTOs.studentCollegeCourseRegistration.StudentCollegeCourseRegistrationResponseDto;
+import com.consultancy.education.model.CollegeCourse;
+import com.consultancy.education.model.CollegeCourseSnapshot;
 import com.consultancy.education.model.StudentCollegeCourseRegistration;
 
-public class StudentCollegeCourseRegistrationTransformer {
-    public static StudentCollegeCourseRegistrationResponseDto toResDTO(StudentCollegeCourseRegistration studentCollegeCourseRegistration) {
+import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
+public class StudentCollegeCourseRegistrationTransformer {
+
+    public static StudentCollegeCourseRegistrationResponseDto toResDto(StudentCollegeCourseRegistration reg) {
+        CollegeCourseSnapshot snap = reg.getCollegeCourseSnapshot();
         return StudentCollegeCourseRegistrationResponseDto.builder()
-                .studentCollegeCourseRegistrationId(studentCollegeCourseRegistration.getId())
-                .applicationStatus(studentCollegeCourseRegistration.getApplicationStatus())
-                .collegeCourseId(studentCollegeCourseRegistration.getCollegeCourse().getId())
-                .studentId(studentCollegeCourseRegistration.getStudent().getId())
-                .offerLetter(studentCollegeCourseRegistration.getOfferLetter())
-                .createdAt(studentCollegeCourseRegistration.getCreatedAt())
-                .updatedAt(studentCollegeCourseRegistration.getUpdatedAt())
+                .registrationId(reg.getId())
+                .studentId(reg.getStudent().getId())
+                .collegeCourseSnapshotId(snap.getId())
+                .intakeSession(reg.getIntakeSession())
+                .applicationYear(reg.getApplicationYear())
+                .status(reg.getApplicationStatus().name())
+                .remarks(reg.getRemarks())
+                .createdAt(reg.getCreatedAt())
+                .updatedAt(reg.getUpdatedAt())
+                .courseName(snap.getCourseName())
+                .collegeName(snap.getCollegeName())
                 .build();
     }
 }

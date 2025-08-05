@@ -1,8 +1,8 @@
 package com.consultancy.education.DTOs.requestDTOs.student;
 
-import com.consultancy.education.enums.ActiveStatus;
 import com.consultancy.education.enums.Gender;
 import com.consultancy.education.enums.GraduationLevel;
+import com.consultancy.education.enums.ActiveStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -17,14 +17,14 @@ import java.time.LocalDate;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-@JsonInclude(JsonInclude.Include.NON_EMPTY)
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-@Schema(description = "Student request dto api request")
-public class StudentRequestDto {
+@Schema(description = "Student Profile Add Request DTO")
+public class StudentProfileRequestDto {
 
-    @NotNull(message = "Student Id is required")
+    @NotNull(message = "User Id is required")
     Long userId;
 
     @Pattern(regexp = "^\\d{10}$", message = "Alternate phone number must be 10 digits.")
@@ -40,4 +40,7 @@ public class StudentRequestDto {
 
     @NotNull(message = "Graduation level is required.")
     GraduationLevel graduationLevel;
+
+    // Profile active status is optional for add, default is ACTIVE
+    ActiveStatus profileActiveStatus;
 }

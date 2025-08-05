@@ -14,18 +14,15 @@ import java.time.LocalDateTime;
 @Builder
 public class StudentCollegeCourseRegistrationResponseDto {
 
-    Long studentCollegeCourseRegistrationId;
-
+    Long registrationId;
     Long studentId;
-
-    Long collegeCourseId;
-
-    @Enumerated(EnumType.STRING)
-    ApprovalStatus applicationStatus;
-
-    String offerLetter;
-
+    Long collegeCourseSnapshotId;
+    String intakeSession;
+    Integer applicationYear;
+    String status; // e.g., PENDING
+    String remarks;
     LocalDateTime createdAt;
-
     LocalDateTime updatedAt;
+    String courseName;
+    String collegeName;
 }
