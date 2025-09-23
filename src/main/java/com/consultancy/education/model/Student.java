@@ -20,7 +20,6 @@ import java.util.List;
 @Builder
 public class Student {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @Enumerated(EnumType.STRING)
@@ -51,6 +50,7 @@ public class Student {
 
     @JoinColumn
     @OneToOne
+    @MapsId
     User user;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
