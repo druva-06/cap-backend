@@ -4,8 +4,10 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.ChangePasswordRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthRefreshRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthRefreshResponseDto;
 import com.consultancy.education.exception.CustomException;
 import com.consultancy.education.model.Student;
 import com.consultancy.education.model.User;
@@ -398,6 +400,63 @@ public class UserAuthServiceImpl implements UserAuthService {
         } catch (Exception e) {
             log.error("Unexpected error during password change: {}", e.getMessage());
             throw new CustomException("Unexpected error occurred while changing password.");
+        }
+    }
+
+    @Override
+    public UserAuthRefreshResponseDto refreshAccessToken(UserAuthRefreshRequestDto refreshTokenRequestDto) {
+        log.info("Refresh token service started for email: {}", refreshTokenRequestDto.getEmail());
+
+        if (refreshTokenRequestDto.getEmail() == null || refreshTokenRequestDto.getEmail().trim().isEmpty()) {
+            log.warn("Refresh token: email is null or empty");
+            throw new CustomException("Email cannot be empty.");
+        }
+        if (refreshTokenRequestDto.getRefreshToken() == null || refreshTokenRequestDto.getRefreshToken().trim().isEmpty()) {
+            log.warn("Refresh token: refreshToken is null or empty for email: {}", refreshTokenRequestDto.getEmail());
+            throw new CustomException("Refresh token cannot be empty.");
+        }
+
+        try {
+            Map<String, String> authParams = new HashMap<>();
+            authParams.put("REFRESH_TOKEN", refreshTokenRequestDto.getRefreshToken());
+            // secret hash is required in your codebase patterns (you use it for login/signup)
+            String secretHash = CognitoUtil.calculateSecretHash(clientId, clientSecret, refreshTokenRequestDto.getEmail());
+            authParams.put("SECRET_HASH", secretHash);
+
+            InitiateAuthRequest authRequest = InitiateAuthRequest.builder()
+                    .clientId(clientId)
+                    .authFlow(AuthFlowType.REFRESH_TOKEN_AUTH)
+                    .authParameters(authParams)
+                    .build();
+
+            InitiateAuthResponse authResponse = cognitoClient.initiateAuth(authRequest);
+            AuthenticationResultType result = authResponse.authenticationResult();
+
+            if (result == null) {
+                log.error("Cognito returned null authenticationResult for refresh token, email: {}", refreshTokenRequestDto.getEmail());
+                throw new CustomException("Unable to refresh token");
+            }
+
+            UserAuthRefreshResponseDto responseDto = new UserAuthRefreshResponseDto();
+            responseDto.setAccessToken(result.accessToken());
+            responseDto.setIdToken(result.idToken());
+            responseDto.setTokenType(result.tokenType());
+            responseDto.setExpiresIn(result.expiresIn());
+
+            log.info("Refresh token successful for email: {}", refreshTokenRequestDto.getEmail());
+            return responseDto;
+
+        } catch (CognitoIdentityProviderException e) {
+            String error = e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage();
+            log.error("Cognito refresh token error for email {}: {}", refreshTokenRequestDto.getEmail(), error);
+            // Map common errors to friendly messages similar to your other methods
+            if (error != null && error.contains("Invalid refresh token")) {
+                throw new CustomException("Invalid or expired refresh token.");
+            }
+            throw new CustomException(error != null ? error : "Failed to refresh token.");
+        } catch (Exception e) {
+            log.error("Unexpected error while refreshing token for email {}: {}", refreshTokenRequestDto.getEmail(), e.getMessage(), e);
+            throw new CustomException("Unexpected error while refreshing token. Please try again later.");
         }
     }
 }

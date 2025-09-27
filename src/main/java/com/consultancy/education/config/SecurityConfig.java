@@ -38,6 +38,7 @@ public class SecurityConfig {
             "/auth/resendVerificationCode/**",
             "/auth/confirmVerificationCode",
             "/auth/confirmForgotPassword",
+            "/auth/refresh",
             "/swagger-ui/**",
             "/v3/**"
     };

@@ -2,8 +2,10 @@ package com.consultancy.education.controller;
 
 import com.consultancy.education.DTOs.requestDTOs.userAuth.ChangePasswordRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthRefreshRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthRefreshResponseDto;
 import com.consultancy.education.exception.CustomException;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.response.ApiFailureResponse;
@@ -144,7 +146,7 @@ public class UserAuthController {
 
     @GetMapping("/confirmForgotPassword")
     public ResponseEntity<?> confirmForgotPassword(@RequestParam String email, @RequestParam String confirmationCode, @RequestParam String newPassword){
-       log.info("Confirm password request received: {}", email);
+        log.info("Confirm password request received: {}", email);
         try {
             String response = userAuthService.confirmForgotPassword(email, confirmationCode, newPassword);
             log.info("Confirm password response: {}", response);
@@ -155,7 +157,7 @@ public class UserAuthController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
         }
         catch (CustomException e){
-           log.error("Cognito confirm forgot password errors occurred: {}", e.getMessage());
+            log.error("Cognito confirm forgot password errors occurred: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
         }
         catch (Exception e){
@@ -186,6 +188,29 @@ public class UserAuthController {
             log.error("Change password internal error: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        }
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<?> refreshToken(@RequestBody @Valid UserAuthRefreshRequestDto refreshTokenRequestDto, BindingResult bindingResult) {
+        log.info("Refresh token request received: {}", refreshTokenRequestDto.getRefreshToken());
+        if (bindingResult.hasErrors()) {
+            log.error("Refresh token validation errors occurred");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiFailureResponse<>(ToMap.bindingResultToMap(bindingResult), "Validation failed", 400));
+        }
+
+        try {
+            UserAuthRefreshResponseDto response = userAuthService.refreshAccessToken(refreshTokenRequestDto);
+            log.info("Refresh token response successful for email: {}", refreshTokenRequestDto.getEmail());
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiSuccessResponse<>(response, "Token refreshed Successfully!", 200));
+        } catch (CustomException e) {
+            log.error("Cognito refresh token error occurred: {}", e.getMessage());
+            // keep consistent with your other endpoints (they often return 200 with ApiFailureResponse for Cognito problems)
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
+        } catch (Exception e) {
+            log.error("Refresh token internal error: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }
     }
 }
