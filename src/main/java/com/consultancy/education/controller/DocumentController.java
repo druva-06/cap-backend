@@ -70,7 +70,7 @@ public class DocumentController {
         }
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN')")
     @DeleteMapping("/delete/{documentId}")
     public ResponseEntity<?> deleteDocument(@PathVariable Long documentId, Principal principal) {
         try {

@@ -1,10 +1,11 @@
 package com.consultancy.education.model;
 
+import com.consultancy.education.enums.DocumentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "documents")
@@ -32,19 +33,29 @@ public class Document {
     String documentType;
 
     @Column(nullable = false)
+    String category;
+
+    @Column(length = 1000)
+    String remarks;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    DocumentStatus documentStatus;
+
+    @Column(nullable = false)
     String fileUrl;
 
     @Column(nullable = false)
-    String uploadedBy; // Username or userId
-
-    @Column(nullable = false, updatable = false)
-    LocalDateTime uploadedAt;
+    String uploadedBy;
 
     @Column(nullable = false)
     Boolean isDeleted = false;
 
+    @Column(name = "uploaded_at", nullable = false, updatable = false)
+    private Instant uploadedAt;
+
     @PrePersist
     protected void onCreate() {
-        uploadedAt = LocalDateTime.now();
+        this.uploadedAt = Instant.now();
     }
 }

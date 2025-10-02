@@ -3,6 +3,7 @@ package com.consultancy.education.DTOs.responseDTOs.document;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -15,7 +16,10 @@ public class DocumentResponseDto {
     String referenceType;
     Long referenceId;
     String documentType;
+    String documentStatus;
+    String category;
+    String remarks;
     String fileUrl;
     String uploadedBy;
-    LocalDateTime uploadedAt;
+    Instant uploadedAt;
 }
