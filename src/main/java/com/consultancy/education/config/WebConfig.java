@@ -8,9 +8,16 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Allow all endpoints
-                .allowedOrigins("http://localhost:3000", "https://wow-cap-frontend.vercel.app/", "http://82.112.234.51:5173") // Allow your frontend origin
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS") // Allow specific HTTP methods
-                .allowedHeaders("*"); // Allow all headers
+        registry.addMapping("/**")
+                .allowedOrigins(
+                        "http://localhost:3000",
+                        "https://wow-cap-frontend.vercel.app",
+                        "http://82.112.234.51:5173"
+                )
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .exposedHeaders("Authorization", "Content-Type")
+                .maxAge(3600);
     }
 }
