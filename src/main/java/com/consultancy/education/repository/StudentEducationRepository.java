@@ -9,11 +9,9 @@ import java.util.List;
 public interface StudentEducationRepository extends JpaRepository<StudentEducation, Long> {
     List<StudentEducation> findByStudentId(Long studentId);
 
-    boolean existsByStudentIdAndEducationLevelAndInstitutionNameAndBoardAndStartYear(
+    boolean existsByStudentIdAndEducationLevelAndInstitutionName(
             Long studentId,
             com.consultancy.education.enums.GraduationLevel educationLevel,
-            String institutionName,
-            String board,
-            java.time.LocalDate startYear
+            String institutionName
     );
 }

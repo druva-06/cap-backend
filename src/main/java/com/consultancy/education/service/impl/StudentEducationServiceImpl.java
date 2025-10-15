@@ -49,8 +49,8 @@ public class StudentEducationServiceImpl implements StudentEducationService {
             throw new NotFoundException("Student not found");
         }
 
-        boolean exists = studentEducationRepository.existsByStudentIdAndEducationLevelAndInstitutionNameAndBoardAndStartYear(
-                student.getId(), dto.getEducationLevel(), dto.getInstitutionName(), dto.getBoard(), dto.getStartYear());
+        boolean exists = studentEducationRepository.existsByStudentIdAndEducationLevelAndInstitutionName(
+                student.getId(), dto.getEducationLevel(), dto.getInstitutionName());
 
         if (exists) {
             log.warn("Duplicate education detected for userId: {}", userId);

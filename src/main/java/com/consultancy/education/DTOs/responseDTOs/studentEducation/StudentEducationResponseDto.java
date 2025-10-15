@@ -26,8 +26,8 @@ public class StudentEducationResponseDto {
     LocalDate endYear;
     Double percentage;
     Double cgpa;
-    String division;
-    String specialization;
+    String fieldOfStudy;
+    String degree;
     Integer backlogs;
     DocumentResponseDto certificateDocument;
 }

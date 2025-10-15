@@ -17,8 +17,8 @@ public class StudentEducationTransformer {
                 .endYear(dto.getEndYear())
                 .percentage(dto.getPercentage())
                 .cgpa(dto.getCgpa())
-                .division(dto.getDivision())
-                .specialization(dto.getSpecialization())
+                .fieldOfStudy(dto.getFieldOfStudy())
+                .degree(dto.getDegree())
                 .backlogs(dto.getBacklogs())
                 .build();
     }
@@ -33,8 +33,8 @@ public class StudentEducationTransformer {
         education.setEndYear(dto.getEndYear());
         education.setPercentage(dto.getPercentage());
         education.setCgpa(dto.getCgpa());
-        education.setDivision(dto.getDivision());
-        education.setSpecialization(dto.getSpecialization());
+        education.setFieldOfStudy(dto.getFieldOfStudy());
+        education.setDegree(dto.getDegree());
         education.setBacklogs(dto.getBacklogs());
     }
 
@@ -50,8 +50,8 @@ public class StudentEducationTransformer {
                 .endYear(education.getEndYear())
                 .percentage(education.getPercentage())
                 .cgpa(education.getCgpa())
-                .division(education.getDivision())
-                .specialization(education.getSpecialization())
+                .fieldOfStudy(education.getFieldOfStudy())
+                .degree(education.getDegree())
                 .backlogs(education.getBacklogs())
                 .certificateDocument(docDto)
                 .build();

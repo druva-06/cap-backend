@@ -2,6 +2,9 @@ package com.consultancy.education.DTOs.requestDTOs.studentEducation;
 
 import com.consultancy.education.enums.GraduationLevel;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import jakarta.validation.constraints.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -13,17 +16,21 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class StudentEducationRequestDto {
+
     @NotNull
     GraduationLevel educationLevel;
 
     @NotBlank
-    String institutionName;
+    String degree;
 
     @NotBlank
-    String board;
+    String fieldOfStudy;
 
-    String collegeCode;
+    @NotBlank
+    String institutionName;
 
     @NotBlank
     String institutionAddress;
@@ -32,7 +39,6 @@ public class StudentEducationRequestDto {
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     LocalDate startYear;
 
-    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
     LocalDate endYear;
 
@@ -44,12 +50,9 @@ public class StudentEducationRequestDto {
     @DecimalMin("0.0") @DecimalMax("10.0")
     Double cgpa;
 
-    String division;
+    String board;
+    String collegeCode;
 
-    @NotBlank
-    String specialization;
-
-    @NotNull
     @Min(0)
     Integer backlogs;
 }

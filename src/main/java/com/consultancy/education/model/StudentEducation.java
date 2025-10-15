@@ -29,7 +29,6 @@ public class StudentEducation {
     @Column(nullable = false)
     String institutionName;
 
-    @Column(nullable = false)
     String board;
 
     String collegeCode;
@@ -42,7 +41,6 @@ public class StudentEducation {
     LocalDate startYear;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd/MM/yyyy")
-    @Column(nullable = false)
     LocalDate endYear;
 
     @Column(nullable = false)
@@ -51,12 +49,12 @@ public class StudentEducation {
     @Column(nullable = false)
     Double cgpa;
 
-    String division;
+    @Column(nullable = false)
+    String fieldOfStudy;
 
     @Column(nullable = false)
-    String specialization;
+    String degree;
 
-    @Column(nullable = false)
     Integer backlogs;
 
     // NEW: link to document
