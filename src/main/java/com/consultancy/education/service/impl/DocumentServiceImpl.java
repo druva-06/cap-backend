@@ -3,11 +3,14 @@ package com.consultancy.education.service.impl;
 import com.consultancy.education.DTOs.requestDTOs.document.DocumentUploadRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.document.DocumentResponseDto;
 import com.consultancy.education.enums.DocumentStatus;
+import com.consultancy.education.exception.CustomException;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.exception.ValidationException;
 import com.consultancy.education.model.Document;
+import com.consultancy.education.model.User;
 import com.consultancy.education.repository.DocumentRepository;
 import com.consultancy.education.repository.StudentRepository;
+import com.consultancy.education.repository.UserRepository;
 import com.consultancy.education.service.DocumentService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,9 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUpdateUserAttributesRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -25,6 +31,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import jakarta.annotation.PostConstruct;
 
 import java.io.InputStream;
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 
@@ -34,6 +41,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final StudentRepository studentRepository;
+    private final UserRepository userRepository;
+    private final CognitoIdentityProviderClient cognitoClient;
     private S3Client s3Client;
 
     @Value("${aws.s3.bucketName}")
@@ -42,6 +51,8 @@ public class DocumentServiceImpl implements DocumentService {
     private String accessKeyId;
     @Value("${aws.s3.secretAccessKey}")
     private String secretAccessKey;
+    @Value("${aws.cognito.userPoolId}")
+    private String userPoolId;
 
     private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
             "application/pdf", "image/jpeg", "image/png", "image/jpg",
@@ -49,10 +60,16 @@ public class DocumentServiceImpl implements DocumentService {
     );
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-    public DocumentServiceImpl(DocumentRepository documentRepository, StudentRepository studentRepository) {
+    public DocumentServiceImpl(DocumentRepository documentRepository,
+                               StudentRepository studentRepository,
+                               UserRepository userRepository,
+                               CognitoIdentityProviderClient cognitoClient) {
         this.documentRepository = documentRepository;
         this.studentRepository = studentRepository;
+        this.userRepository = userRepository;
+        this.cognitoClient = cognitoClient;
     }
+
 
     @PostConstruct
     public void initS3Client() {
@@ -270,5 +287,230 @@ public class DocumentServiceImpl implements DocumentService {
         doc.setIsDeleted(true);
         documentRepository.save(doc);
         log.info("Document marked as deleted: {}", documentId);
+    }
+
+    @Override
+    @Transactional
+    public DocumentResponseDto uploadProfileImage(MultipartFile file, String uploadedBy) {
+        log.info("Profile image upload requested by {}", uploadedBy);
+
+        // validate file like before (image types and 5MB)
+        if (file == null || file.isEmpty()) {
+            throw new ValidationException(Collections.singletonList("File must not be empty"));
+        }
+        String contentType = Optional.ofNullable(file.getContentType()).orElse("");
+        Set<String> allowedImageMime = Set.of("image/jpeg", "image/png", "image/jpg", "image/webp");
+        if (!allowedImageMime.contains(contentType.toLowerCase())) {
+            throw new ValidationException(Collections.singletonList("Unsupported file type: " + contentType));
+        }
+        if (file.getSize() > 5L * 1024 * 1024) {
+            throw new ValidationException(Collections.singletonList("File size exceeds 5MB"));
+        }
+
+        // find local user and student id
+        User user = userRepository.findByEmail(uploadedBy);
+        if (user == null) {
+            throw new NotFoundException("User not found");
+        }
+        Long studentId = user.getId();
+
+        // soft-delete existing active PROFILE_IMAGE doc
+        documentRepository.findByReferenceTypeAndReferenceIdAndDocumentTypeAndIsDeletedFalse(
+                "STUDENT", studentId, "PROFILE_IMAGE"
+        ).ifPresent(existing -> {
+            existing.setIsDeleted(true);
+            documentRepository.save(existing);
+            log.info("Soft-deleted old profile document id={}", existing.getId());
+        });
+
+        // prepare a DocumentUploadRequestDto for profile image
+        DocumentUploadRequestDto reqDto = DocumentUploadRequestDto.builder()
+                .referenceType("STUDENT")
+                .referenceId(studentId)
+                .documentType("PROFILE_IMAGE")
+                .category("Personal")
+                .remarks(null)
+                .build();
+
+        // 1) upload to S3 & save Document (via helper)
+        Map<String, Object> stored = storeDocumentToS3AndDb(reqDto, file, uploadedBy);
+        Document savedDoc = (Document) stored.get("document");
+        String newKey = (String) stored.get("fileKey");
+        String newUrl = (String) stored.get("fileUrl");
+
+        // record previous URL/key to delete after success
+        String prevUrl = user.getProfilePicture();
+        String prevKey = prevUrl != null && !prevUrl.isBlank() ? extractKeyFromS3Url(prevUrl) : null;
+
+        // 2) update user.profile_picture in DB (still inside this @Transactional method)
+        user.setProfilePicture(newUrl);
+        userRepository.save(user);
+        log.info("Updated user.profile_picture for userId={}", user.getId());
+
+        // 3) update Cognito attribute (admin). If this fails, roll back transaction and delete new S3 object.
+        try {
+            AttributeType pictureAttr = AttributeType.builder().name("picture").value(newUrl).build();
+            AdminUpdateUserAttributesRequest req = AdminUpdateUserAttributesRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(uploadedBy)
+                    .userAttributes(pictureAttr)
+                    .build();
+            cognitoClient.adminUpdateUserAttributes(req);
+            log.info("Cognito picture attribute updated for {}", uploadedBy);
+
+            // Cognito succeeded -> attempt to delete previous S3 object (best-effort)
+            if (prevKey != null) {
+                try {
+                    s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(prevKey).build());
+                    log.info("Deleted previous S3 object key={}", prevKey);
+                } catch (Exception ex) {
+                    log.warn("Failed to delete previous S3 object key={}, manual cleanup may be required", prevKey);
+                }
+            }
+
+            // return response DTO built from savedDoc
+            return DocumentResponseDto.builder()
+                    .id(savedDoc.getId())
+                    .referenceType(savedDoc.getReferenceType())
+                    .referenceId(savedDoc.getReferenceId())
+                    .documentType(savedDoc.getDocumentType())
+                    .category(savedDoc.getCategory())
+                    .remarks(savedDoc.getRemarks())
+                    .documentStatus(savedDoc.getDocumentStatus().toString())
+                    .fileUrl(savedDoc.getFileUrl())
+                    .uploadedBy(savedDoc.getUploadedBy())
+                    .uploadedAt(savedDoc.getUploadedAt())
+                    .build();
+
+        } catch (Exception cognitoEx) {
+            log.error("Cognito update failed: {} — attempting to delete new S3 object and roll back", cognitoEx.getMessage());
+
+            // best-effort delete the newly uploaded object
+            try {
+                s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(newKey).build());
+                log.info("Deleted newly uploaded S3 object key={} after Cognito failure", newKey);
+            } catch (Exception delEx) {
+                log.error("Failed to delete newly uploaded object key={} after Cognito failure; manual cleanup required", newKey, delEx);
+                // optionally: insert into pending-delete table for later cleanup
+            }
+
+            // throw runtime so transaction will rollback (document and user update will be rolled back)
+            throw new CustomException("Failed to update Cognito attribute: " + cognitoEx.getMessage());
+        }
+    }
+
+    /**
+     * Uploads file to S3 and saves a Document entity (but does NOT touch User or Cognito).
+     * Returns the saved Document and the S3 key in a small holder Map.
+     */
+    private Map<String, Object> storeDocumentToS3AndDb(DocumentUploadRequestDto requestDto,
+                                                       MultipartFile file,
+                                                       String uploadedBy) {
+        // copied & slightly adapted logic from existing uploadDocument(...)
+        String contentType = Optional.ofNullable(file.getContentType()).orElse("application/octet-stream");
+        long fileSize = file.getSize();
+        String originalName = Optional.ofNullable(file.getOriginalFilename()).orElse("file");
+        String extension = "";
+        int lastDot = originalName.lastIndexOf('.');
+        if (lastDot >= 0 && lastDot < originalName.length() - 1) {
+            extension = originalName.substring(lastDot);
+        }
+
+        String sanitizedReferenceType = sanitizePathComponent(requestDto.getReferenceType());
+        String sanitizedDocumentType = sanitizePathComponent(requestDto.getDocumentType());
+        String fileKey = String.format("%s/%d/%s/%s_%d%s",
+                sanitizedReferenceType,
+                requestDto.getReferenceId(),
+                sanitizedDocumentType,
+                sanitizedDocumentType,
+                System.currentTimeMillis(),
+                extension
+        );
+
+        // stream upload to S3 (no ACL)
+        try (InputStream in = file.getInputStream()) {
+            PutObjectRequest putReq = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(fileKey)
+                    .contentType(contentType)
+                    .contentLength(fileSize)
+                    .build();
+
+            s3Client.putObject(putReq, RequestBody.fromInputStream(in, fileSize));
+            log.info("S3 upload successful. key='{}'", fileKey);
+        } catch (Exception e) {
+            log.error("Failed to upload file to S3. key={}", fileKey, e);
+            throw new RuntimeException("Error while uploading document to S3", e);
+        }
+
+        // build URL
+        String fileUrl;
+        try {
+            fileUrl = s3Client.utilities().getUrl(b -> b.bucket(bucketName).key(fileKey)).toExternalForm();
+        } catch (Exception e) {
+            log.warn("S3 utilities getUrl failed; fallback URL built");
+            fileUrl = String.format("https://%s.s3.amazonaws.com/%s", bucketName, fileKey);
+        }
+
+        // create Document entity
+        Document document = Document.builder()
+                .referenceType(requestDto.getReferenceType())
+                .referenceId(requestDto.getReferenceId())
+                .documentType(requestDto.getDocumentType())
+                .category(requestDto.getCategory())
+                .remarks(requestDto.getRemarks())
+                .documentStatus(DocumentStatus.VERIFIED)
+                .fileUrl(fileUrl)
+                .uploadedBy(uploadedBy)
+                .isDeleted(false)
+                .build();
+
+        // persist doc; if DB save fails, delete S3 object to avoid orphan
+        try {
+            document = documentRepository.save(document);
+            log.info("Document saved to DB with id={}", document.getId());
+        } catch (Exception dbEx) {
+            log.error("DB save failed after S3 upload. Attempting to delete S3 object key='{}' to avoid orphan", fileKey, dbEx);
+            try {
+                s3Client.deleteObject(DeleteObjectRequest.builder().bucket(bucketName).key(fileKey).build());
+                log.info("Deleted uploaded S3 object key='{}' after DB failure", fileKey);
+            } catch (Exception delEx) {
+                log.error("Failed to delete S3 object key='{}' after DB failure; manual cleanup required", fileKey, delEx);
+            }
+            throw dbEx;
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("document", document);
+        result.put("fileKey", fileKey);
+        result.put("fileUrl", fileUrl);
+        return result;
+    }
+
+    private String extractKeyFromS3Url(String url) {
+        try {
+            URI uri = URI.create(url);
+            String host = uri.getHost() != null ? uri.getHost() : "";
+            String path = uri.getPath() != null ? uri.getPath() : "";
+            // Case: bucket in host (bucket.s3.amazonaws.com) -> path starts with /{key}
+            if (host.startsWith(bucketName + ".")) {
+                if (path.startsWith("/")) path = path.substring(1);
+                return path;
+            }
+            // Case: s3.region.amazonaws.com -> path starts with /{bucket}/{key}
+            if (path.startsWith("/" + bucketName + "/")) {
+                return path.substring(("/" + bucketName + "/").length());
+            }
+            // Last resort: if path contains bucketName, remove prefix until key
+            int idx = path.indexOf("/" + bucketName + "/");
+            if (idx >= 0) {
+                return path.substring(idx + ("/" + bucketName + "/").length());
+            }
+            // if none matched, return null
+            return null;
+        } catch (Exception e) {
+            log.debug("Failed to parse S3 URL to key: {}", e.getMessage());
+            return null;
+        }
     }
 }
