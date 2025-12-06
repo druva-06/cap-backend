@@ -42,15 +42,16 @@ public class Student {
     String alternatePhoneNumber;
 
     @Column(name = "profile_completion", nullable = false, columnDefinition = "INT DEFAULT 0")
+    @Builder.Default
     Integer profileCompletion = 0;
 
     @JoinColumn
     @OneToOne
     Seo seo;
 
-    @JoinColumn
     @OneToOne
     @MapsId
+    @JoinColumn(name = "id")
     User user;
 
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)

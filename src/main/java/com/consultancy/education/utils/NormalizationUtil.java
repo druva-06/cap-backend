@@ -1,7 +1,6 @@
-package com.consultancy.education.util;
+package com.consultancy.education.utils;
 
 import com.consultancy.education.enums.Month;
-import org.apache.commons.lang3.StringUtils;
 
 import java.time.Year;
 import java.util.*;

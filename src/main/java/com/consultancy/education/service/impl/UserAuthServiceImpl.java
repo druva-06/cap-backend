@@ -8,6 +8,7 @@ import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthRefreshReques
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthRefreshResponseDto;
+import com.consultancy.education.enums.Role;
 import com.consultancy.education.exception.CustomException;
 import com.consultancy.education.model.Student;
 import com.consultancy.education.model.User;
@@ -100,9 +101,15 @@ public class UserAuthServiceImpl implements UserAuthService {
 
             // Save user in local database
             User user = UserAuthTransformer.toUserEntity(userAuthSignUpRequestDto);
-            Student student = new Student();
-            student.setUser(user);
-            user.setStudent(student);
+
+            // Only create Student entity if the role is STUDENT
+            if (userAuthSignUpRequestDto.getRole() == Role.STUDENT) {
+                Student student = new Student();
+                student.setUser(user);
+                user.setStudent(student);
+                log.info("Student record created for user: {}", userAuthSignUpRequestDto.getEmail());
+            }
+
             userRepository.save(user);
 
             log.info("User {} saved in local database", userAuthSignUpRequestDto.getEmail());

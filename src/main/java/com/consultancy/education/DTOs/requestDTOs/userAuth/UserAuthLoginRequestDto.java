@@ -1,5 +1,6 @@
 package com.consultancy.education.DTOs.requestDTOs.userAuth;
 
+import com.consultancy.education.enums.Role;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
