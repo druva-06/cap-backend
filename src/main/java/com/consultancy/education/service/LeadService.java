@@ -7,6 +7,8 @@ import com.consultancy.education.DTOs.responseDTOs.lead.LeadResponseDto;
 
 public interface LeadService {
     LeadResponseDto createLead(LeadRequestDto leadRequestDto, String createdByUserEmail);
-    
+
     LeadPageResponseDto getLeads(LeadFilterDto filterDto);
+
+    LeadResponseDto getLeadById(Long leadId);
 }

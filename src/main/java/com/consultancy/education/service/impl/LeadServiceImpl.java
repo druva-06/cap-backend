@@ -95,27 +95,39 @@ public class LeadServiceImpl implements LeadService {
 
         // Build pageable with sorting
         Sort sort = Sort.by(
-            filterDto.getSortDirection().equalsIgnoreCase("ASC") 
-                ? Sort.Direction.ASC 
-                : Sort.Direction.DESC,
-            filterDto.getSortBy()
-        );
-        
+                filterDto.getSortDirection().equalsIgnoreCase("ASC")
+                        ? Sort.Direction.ASC
+                        : Sort.Direction.DESC,
+                filterDto.getSortBy());
+
         Pageable pageable = PageRequest.of(
-            filterDto.getPage(), 
-            filterDto.getSize(), 
-            sort
-        );
+                filterDto.getPage(),
+                filterDto.getSize(),
+                sort);
 
         // Fetch leads with specification and pagination
         Page<Lead> leadPage = leadRepository.findAll(spec, pageable);
 
-        log.info("Found {} leads (Page {}/{})", 
-                leadPage.getTotalElements(), 
-                leadPage.getNumber() + 1, 
+        log.info("Found {} leads (Page {}/{})",
+                leadPage.getTotalElements(),
+                leadPage.getNumber() + 1,
                 leadPage.getTotalPages());
 
         // Convert to response DTO
         return LeadTransformer.toPageResponse(leadPage);
+    }
+
+    @Override
+    public LeadResponseDto getLeadById(Long leadId) {
+        log.info("Fetching lead with ID: {}", leadId);
+
+        Lead lead = leadRepository.findById(leadId)
+                .orElseThrow(() -> {
+                    log.error("Lead not found with ID: {}", leadId);
+                    return new NotFoundException("Lead not found with ID: " + leadId);
+                });
+
+        log.info("Lead found: {} {}", lead.getFirstName(), lead.getLastName());
+        return LeadTransformer.toResponseDto(lead);
     }
 }

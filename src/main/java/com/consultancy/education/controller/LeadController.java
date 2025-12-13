@@ -102,7 +102,7 @@ public class LeadController {
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "DESC") String sortDirection) {
 
-        log.info("Get leads request - search: {}, campaign: {}, page: {}, size: {}", 
+        log.info("Get leads request - search: {}, campaign: {}, page: {}, size: {}",
                 search, campaign, page, size);
 
         try {
@@ -135,6 +135,29 @@ public class LeadController {
             log.error("Error fetching leads: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(new ArrayList<>(), "Error fetching leads: " + e.getMessage(), 500));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
+    @GetMapping("/{id}")
+    @Operation(summary = "Get lead by ID", description = "Retrieves complete information of a lead by its ID")
+    public ResponseEntity<?> getLeadById(@PathVariable Long id) {
+        log.info("Get lead by ID request - ID: {}", id);
+
+        try {
+            LeadResponseDto response = leadService.getLeadById(id);
+            log.info("Successfully fetched lead with ID: {}", id);
+            return ResponseEntity.ok(new ApiSuccessResponse<>(response, "Lead fetched successfully", 200));
+
+        } catch (NotFoundException e) {
+            log.error("Lead not found with ID: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
+
+        } catch (Exception e) {
+            log.error("Error fetching lead by ID: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), "Error fetching lead: " + e.getMessage(), 500));
         }
     }
 
