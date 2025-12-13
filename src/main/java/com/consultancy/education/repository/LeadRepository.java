@@ -1,5 +1,6 @@
 package com.consultancy.education.repository;
 
+import com.consultancy.education.enums.LeadStatus;
 import com.consultancy.education.model.Lead;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -24,4 +25,6 @@ public interface LeadRepository extends JpaRepository<Lead, Long>, JpaSpecificat
     boolean existsByEmail(String email);
 
     boolean existsByPhoneNumber(String phoneNumber);
+
+    Long countByStatus(LeadStatus status);
 }

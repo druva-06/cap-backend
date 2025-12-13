@@ -4,6 +4,7 @@ import com.consultancy.education.DTOs.requestDTOs.lead.LeadFilterDto;
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadPageResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.lead.LeadStatusCountDto;
 
 public interface LeadService {
     LeadResponseDto createLead(LeadRequestDto leadRequestDto, String createdByUserEmail);
@@ -11,4 +12,8 @@ public interface LeadService {
     LeadPageResponseDto getLeads(LeadFilterDto filterDto);
 
     LeadResponseDto getLeadById(Long leadId);
+
+    Long countTotalLeads();
+
+    LeadStatusCountDto getLeadStatusCounts();
 }

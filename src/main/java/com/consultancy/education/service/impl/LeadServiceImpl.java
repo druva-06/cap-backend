@@ -4,6 +4,8 @@ import com.consultancy.education.DTOs.requestDTOs.lead.LeadFilterDto;
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadPageResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.lead.LeadStatusCountDto;
+import com.consultancy.education.enums.LeadStatus;
 import com.consultancy.education.exception.CustomException;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.model.Lead;
@@ -129,5 +131,40 @@ public class LeadServiceImpl implements LeadService {
 
         log.info("Lead found: {} {}", lead.getFirstName(), lead.getLastName());
         return LeadTransformer.toResponseDto(lead);
+    }
+
+    @Override
+    public Long countTotalLeads() {
+        log.info("Counting total leads");
+        Long count = leadRepository.count();
+        log.info("Total leads count: {}", count);
+        return count;
+    }
+
+    @Override
+    public LeadStatusCountDto getLeadStatusCounts() {
+        log.info("Fetching lead status counts");
+
+        Long totalLeads = leadRepository.count();
+        Long hotLeads = leadRepository.countByStatus(LeadStatus.HOT);
+        Long immediateHotLeads = leadRepository.countByStatus(LeadStatus.IMMEDIATE_HOT);
+        Long warmLeads = leadRepository.countByStatus(LeadStatus.WARM);
+        Long coldLeads = leadRepository.countByStatus(LeadStatus.COLD);
+        Long featureLeads = leadRepository.countByStatus(LeadStatus.FEATURE_LEAD);
+        Long contactedLeads = leadRepository.countByStatus(LeadStatus.CONTACTED);
+
+        log.info(
+                "Status counts - Total: {}, HOT: {}, IMMEDIATE_HOT: {}, WARM: {}, COLD: {}, FEATURE_LEAD: {}, CONTACTED: {}",
+                totalLeads, hotLeads, immediateHotLeads, warmLeads, coldLeads, featureLeads, contactedLeads);
+
+        return LeadStatusCountDto.builder()
+                .totalLeads(totalLeads)
+                .hotLeads(hotLeads)
+                .immediateHotLeads(immediateHotLeads)
+                .warmLeads(warmLeads)
+                .coldLeads(coldLeads)
+                .featureLeads(featureLeads)
+                .contactedLeads(contactedLeads)
+                .build();
     }
 }

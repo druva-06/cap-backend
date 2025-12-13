@@ -161,6 +161,43 @@ public class LeadController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
+    @GetMapping("/count")
+    @Operation(summary = "Get total leads count", description = "Returns the total number of leads in the system")
+    public ResponseEntity<?> getTotalLeadsCount() {
+        log.info("Get total leads count request received");
+
+        try {
+            Long count = leadService.countTotalLeads();
+            log.info("Successfully retrieved total leads count: {}", count);
+            return ResponseEntity.ok(
+                    new ApiSuccessResponse<>(count, "Total leads count retrieved successfully", 200));
+        } catch (Exception e) {
+            log.error("Error counting total leads: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), "Error counting leads: " + e.getMessage(), 500));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
+    @GetMapping("/status-counts")
+    @Operation(summary = "Get lead counts by status", description = "Returns the count of leads grouped by status")
+    public ResponseEntity<?> getLeadStatusCounts() {
+        log.info("Get lead status counts request received");
+
+        try {
+            var statusCounts = leadService.getLeadStatusCounts();
+            log.info("Successfully retrieved lead status counts");
+            return ResponseEntity.ok(
+                    new ApiSuccessResponse<>(statusCounts, "Lead status counts retrieved successfully", 200));
+        } catch (Exception e) {
+            log.error("Error fetching lead status counts: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), "Error fetching status counts: " + e.getMessage(),
+                            500));
+        }
+    }
+
     /**
      * Extract user email from authentication context
      */
