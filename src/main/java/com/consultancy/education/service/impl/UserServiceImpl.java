@@ -1,8 +1,10 @@
 package com.consultancy.education.service.impl;
 
 import com.consultancy.education.DTOs.requestDTOs.user.UserRequestDto;
+import com.consultancy.education.DTOs.responseDTOs.user.CounselorDto;
 import com.consultancy.education.DTOs.responseDTOs.user.UserResponseDto;
 import com.consultancy.education.enums.DocumentType;
+import com.consultancy.education.enums.Role;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.model.User;
 import com.consultancy.education.repository.StudentRepository;
@@ -24,6 +26,8 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -52,65 +56,68 @@ public class UserServiceImpl implements UserService {
         this.s3Client = S3Client.builder()
                 .region(Region.AP_SOUTH_2)
                 .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)
-                ))
+                        AwsBasicCredentials.create(accessKeyId, secretAccessKey)))
                 .build();
     }
 
     @Override
     public UserResponseDto addUser(UserRequestDto userRequestDto) {
-//        boolean existsByEmail = userRepository.existsByEmail(userRequestDto.getEmail());
-//        boolean existsByPhoneNumber = userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber());
-//        if(existsByEmail || existsByPhoneNumber){
-//            List<String> errors = new ArrayList<>();
-//            if(existsByEmail){
-//                errors.add("Email already exists");
-//            }
-//            if(existsByPhoneNumber){
-//                errors.add("Phone number already exists");
-//            }
-//            throw new AlreadyExistException(errors);
-//        }
-//        User user = UserTransformer.toEntity(userRequestDto);
-//        user = userRepository.save(user);
-//        return UserTransformer.toResDTO(user);
+        // boolean existsByEmail =
+        // userRepository.existsByEmail(userRequestDto.getEmail());
+        // boolean existsByPhoneNumber =
+        // userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber());
+        // if(existsByEmail || existsByPhoneNumber){
+        // List<String> errors = new ArrayList<>();
+        // if(existsByEmail){
+        // errors.add("Email already exists");
+        // }
+        // if(existsByPhoneNumber){
+        // errors.add("Phone number already exists");
+        // }
+        // throw new AlreadyExistException(errors);
+        // }
+        // User user = UserTransformer.toEntity(userRequestDto);
+        // user = userRepository.save(user);
+        // return UserTransformer.toResDTO(user);
         return null;
     }
 
     @Override
     public UserResponseDto updateUser(UserRequestDto userRequestDto, Long userId) {
-//        if(userRepository.findById(userId).isPresent()){
-//            User user1 =  userRepository.findByEmail(userRequestDto.getEmail());
-//            User user2 =  userRepository.findByPhoneNumber(userRequestDto.getPhoneNumber());
-//            List<String> errors = UserValidations.checkEmailAndPhoneExist(userId, user1, user2);
-//            if (!errors.isEmpty()) {
-//                throw new AlreadyExistException(errors);
-//            }
-//            User user = userRepository.findById(userId).get();
-//            UserTransformer.updateUser(user, userRequestDto);
-//            user = userRepository.save(user);
-//            return UserTransformer.toResDTO(user);
-//        }
-//        else{
-//            throw new NotFoundException("User not found");
-//        }
+        // if(userRepository.findById(userId).isPresent()){
+        // User user1 = userRepository.findByEmail(userRequestDto.getEmail());
+        // User user2 =
+        // userRepository.findByPhoneNumber(userRequestDto.getPhoneNumber());
+        // List<String> errors = UserValidations.checkEmailAndPhoneExist(userId, user1,
+        // user2);
+        // if (!errors.isEmpty()) {
+        // throw new AlreadyExistException(errors);
+        // }
+        // User user = userRepository.findById(userId).get();
+        // UserTransformer.updateUser(user, userRequestDto);
+        // user = userRepository.save(user);
+        // return UserTransformer.toResDTO(user);
+        // }
+        // else{
+        // throw new NotFoundException("User not found");
+        // }
         return null;
     }
 
     @Override
     public UserResponseDto getUser(Long userId) {
-//        if(userRepository.findById(userId).isPresent()){
-//            return UserTransformer.toResDTO(userRepository.findById(userId).get());
-//        }
-//        else{
-//            throw new NotFoundException("User not found");
-//        }
+        // if(userRepository.findById(userId).isPresent()){
+        // return UserTransformer.toResDTO(userRepository.findById(userId).get());
+        // }
+        // else{
+        // throw new NotFoundException("User not found");
+        // }
         return null;
     }
 
     @Override
     public String uploadFile(Long userId, String documentType, MultipartFile file) {
-        if(userRepository.findById(userId).isPresent()){
+        if (userRepository.findById(userId).isPresent()) {
             User user = userRepository.findById(userId).get();
             // Convert MultipartFile to a File object
             try {
@@ -120,17 +127,19 @@ public class UserServiceImpl implements UserService {
                     try {
                         DocumentType.valueOf(documentType.toUpperCase()); // Safe call
                         // Construct the file key (folder structure inside S3)
-                        String fileKey = String.format("students/%s/%s/%s", user.getUsername(), documentType.toUpperCase(), user.getUsername() + "_" + documentType.toUpperCase());
+                        String fileKey = String.format("students/%s/%s/%s", user.getUsername(),
+                                documentType.toUpperCase(), user.getUsername() + "_" + documentType.toUpperCase());
 
                         // Upload the file to S3
                         s3Client.putObject(PutObjectRequest.builder()
-                                        .bucket(bucketName)
-                                        .key(fileKey)
-                                        .build(),
+                                .bucket(bucketName)
+                                .key(fileKey)
+                                .build(),
                                 RequestBody.fromFile(convertedFile));
 
                         // Generate and return the URL of the uploaded file
-                        String url = s3Client.utilities().getUrl(builder -> builder.bucket(bucketName).key(fileKey)).toExternalForm();
+                        String url = s3Client.utilities().getUrl(builder -> builder.bucket(bucketName).key(fileKey))
+                                .toExternalForm();
                         log.info("Uploaded File: " + url);
 
                         return "Document uploaded successfully";
@@ -142,15 +151,32 @@ public class UserServiceImpl implements UserService {
                     log.error("Failed to upload file to S3: " + e.awsErrorDetails().errorMessage());
                     throw new IOException(e.awsErrorDetails().errorMessage());
                 }
-            }
-            catch(IOException e){
+            } catch (IOException e) {
                 log.error("Unable to convert file: " + file.getOriginalFilename());
                 return "Something went wrong while uploading file";
             }
-        }
-        else {
+        } else {
             throw new NotFoundException("User with id " + userId + " not found");
         }
+    }
+
+    @Override
+    public List<CounselorDto> getAllCounselors() {
+        log.info("Fetching all counselors");
+        List<User> counselors = userRepository.findByRole(Role.COUNSELOR);
+        log.info("Found " + counselors.size() + " counselors");
+
+        List<CounselorDto> counselorDtos = counselors.stream()
+                .map(counselor -> CounselorDto.builder()
+                        .id(counselor.getId())
+                        .name(counselor.getFirstName() + " " + counselor.getLastName())
+                        .email(counselor.getEmail())
+                        .phoneNumber(counselor.getPhoneNumber())
+                        .build())
+                .collect(Collectors.toList());
+
+        log.info("Successfully mapped " + counselorDtos.size() + " counselors to DTOs");
+        return counselorDtos;
     }
 
 }
