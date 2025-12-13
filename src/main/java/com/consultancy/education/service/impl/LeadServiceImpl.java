@@ -2,6 +2,7 @@ package com.consultancy.education.service.impl;
 
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadFilterDto;
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.lead.UpdateLeadRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadPageResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadStatusCountDto;
@@ -131,6 +132,63 @@ public class LeadServiceImpl implements LeadService {
 
         log.info("Lead found: {} {}", lead.getFirstName(), lead.getLastName());
         return LeadTransformer.toResponseDto(lead);
+    }
+
+    @Override
+    @Transactional
+    public LeadResponseDto updateLead(Long leadId, UpdateLeadRequestDto updateLeadRequestDto,
+            String updatedByUserEmail) {
+        log.info("Updating lead with ID: {}", leadId);
+
+        // Find existing lead
+        Lead existingLead = leadRepository.findById(leadId)
+                .orElseThrow(() -> {
+                    log.error("Lead not found with ID: {}", leadId);
+                    return new NotFoundException("Lead not found with ID: " + leadId);
+                });
+
+        // Validate updater user exists by email
+        User updatedBy = userRepository.findByEmail(updatedByUserEmail);
+        if (updatedBy == null) {
+            log.error("Updater user not found with email: {}", updatedByUserEmail);
+            throw new NotFoundException("User not found");
+        }
+
+        // Update editable fields (excluding email and phone)
+        existingLead.setFirstName(updateLeadRequestDto.getFirstName());
+        existingLead.setLastName(updateLeadRequestDto.getLastName());
+        existingLead.setCountry(updateLeadRequestDto.getCountry());
+        existingLead.setStatus(updateLeadRequestDto.getStatus());
+        existingLead.setScore(updateLeadRequestDto.getScore());
+        existingLead.setLeadSource(updateLeadRequestDto.getLeadSource());
+        existingLead.setCampaign(updateLeadRequestDto.getCampaign());
+        existingLead.setPreferredCountries(updateLeadRequestDto.getPreferredCountries());
+        existingLead.setPreferredCourses(updateLeadRequestDto.getPreferredCourses());
+        existingLead.setBudgetRange(updateLeadRequestDto.getBudgetRange());
+        existingLead.setIntake(updateLeadRequestDto.getIntake());
+        existingLead.setTags(
+                updateLeadRequestDto.getTags() != null ? String.join(",", updateLeadRequestDto.getTags()) : null);
+        existingLead.setEncryptedPersonalDetails(updateLeadRequestDto.getEncryptedPersonalDetails());
+        existingLead.setEncryptedAcademicDetails(updateLeadRequestDto.getEncryptedAcademicDetails());
+        existingLead.setEncryptedPreferences(updateLeadRequestDto.getEncryptedPreferences());
+
+        // Update assigned user if provided
+        if (updateLeadRequestDto.getAssignedTo() != null) {
+            User assignedTo = userRepository.findById(updateLeadRequestDto.getAssignedTo())
+                    .orElseThrow(() -> {
+                        log.error("Assigned user not found with ID: {}", updateLeadRequestDto.getAssignedTo());
+                        return new NotFoundException("Assigned counselor not found");
+                    });
+            existingLead.setAssignedTo(assignedTo);
+            log.info("Lead reassigned to: {} {}", assignedTo.getFirstName(), assignedTo.getLastName());
+        }
+
+        // Save updated lead
+        Lead updatedLead = leadRepository.save(existingLead);
+        log.info("Lead updated successfully with ID: {}", updatedLead.getId());
+
+        // Convert to response DTO
+        return LeadTransformer.toResponseDto(updatedLead);
     }
 
     @Override

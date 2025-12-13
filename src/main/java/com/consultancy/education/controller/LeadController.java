@@ -2,6 +2,7 @@ package com.consultancy.education.controller;
 
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadFilterDto;
 import com.consultancy.education.DTOs.requestDTOs.lead.LeadRequestDto;
+import com.consultancy.education.DTOs.requestDTOs.lead.UpdateLeadRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadPageResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.lead.LeadResponseDto;
 import com.consultancy.education.exception.CustomException;
@@ -158,6 +159,53 @@ public class LeadController {
             log.error("Error fetching lead by ID: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(new ArrayList<>(), "Error fetching lead: " + e.getMessage(), 500));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
+    @PutMapping("/{id}")
+    @Operation(summary = "Update lead by ID", description = "Updates lead information. Email and phone number cannot be changed.")
+    public ResponseEntity<?> updateLead(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateLeadRequestDto updateLeadRequestDto,
+            BindingResult bindingResult) {
+
+        log.info("Update lead request received for ID: {}", id);
+
+        // Validate request
+        if (bindingResult.hasErrors()) {
+            log.error("Validation errors in lead update request");
+            Map<String, String> errors = ToMap.bindingResultToMap(bindingResult);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiFailureResponse<>(errors, "Validation failed", 400));
+        }
+
+        try {
+            // Get authenticated user email from SecurityContextHolder
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = getEmailFromAuthentication(authentication);
+
+            // Update lead
+            LeadResponseDto response = leadService.updateLead(id, updateLeadRequestDto, userEmail);
+
+            log.info("Lead updated successfully with ID: {}", response.getId());
+            return ResponseEntity.ok()
+                    .body(new ApiSuccessResponse<>(response, "Lead updated successfully", 200));
+
+        } catch (NotFoundException e) {
+            log.error("Not found exception during lead update: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 404));
+
+        } catch (CustomException e) {
+            log.error("Custom exception during lead update: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 400));
+
+        } catch (Exception e) {
+            log.error("Unexpected error during lead update: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), "Internal server error", 500));
         }
     }
 
