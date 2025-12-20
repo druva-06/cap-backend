@@ -2,7 +2,9 @@ package com.consultancy.education.controller;
 
 import com.consultancy.education.DTOs.requestDTOs.user.UserRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.user.CounselorDto;
+import com.consultancy.education.DTOs.responseDTOs.user.PagedUserResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.user.UserResponseDto;
+import com.consultancy.education.enums.Role;
 import com.consultancy.education.exception.AlreadyExistException;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.exception.ValidationException;
@@ -131,6 +133,48 @@ public class UserController {
                     .body(new ApiSuccessResponse<>(counselors, "Counselors fetched successfully", 200));
         } catch (Exception e) {
             log.error("Error fetching counselors: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
+        }
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
+    @GetMapping("/by-role")
+    public ResponseEntity<?> getUsersByRole(
+            @RequestParam String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("Get users by role request received: role={}, page={}, size={}", role, page, size);
+        try {
+            // Validate and convert role string to enum
+            Role userRole;
+            try {
+                userRole = Role.valueOf(role.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid role: {}", role);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiFailureResponse<>(new ArrayList<>(),
+                                "Invalid role. Allowed values: STUDENT, ADMIN, COUNSELOR, COLLEGE, SUB_AGENT", 400));
+            }
+
+            // Validate pagination parameters
+            if (page < 0) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiFailureResponse<>(new ArrayList<>(), "Page number cannot be negative", 400));
+            }
+            if (size <= 0 || size > 100) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ApiFailureResponse<>(new ArrayList<>(), "Page size must be between 1 and 100", 400));
+            }
+
+            PagedUserResponseDto response = userService.getUsersByRole(userRole, page, size);
+            log.info("Successfully retrieved {} users for role: {} (page {}/{})",
+                    response.getUsers().size(), role, page + 1, response.getTotalPages());
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(new ApiSuccessResponse<>(response, "Users fetched successfully", 200));
+        } catch (Exception e) {
+            log.error("Error fetching users by role: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(new ArrayList<>(), e.getMessage(), 500));
         }

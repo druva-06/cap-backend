@@ -2,6 +2,7 @@ package com.consultancy.education.service.impl;
 
 import com.consultancy.education.DTOs.requestDTOs.user.UserRequestDto;
 import com.consultancy.education.DTOs.responseDTOs.user.CounselorDto;
+import com.consultancy.education.DTOs.responseDTOs.user.PagedUserResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.user.UserResponseDto;
 import com.consultancy.education.enums.DocumentType;
 import com.consultancy.education.enums.Role;
@@ -10,10 +11,15 @@ import com.consultancy.education.model.User;
 import com.consultancy.education.repository.StudentRepository;
 import com.consultancy.education.repository.UserRepository;
 import com.consultancy.education.service.UserService;
+import com.consultancy.education.transformer.UserTransformer;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -177,6 +183,38 @@ public class UserServiceImpl implements UserService {
 
         log.info("Successfully mapped " + counselorDtos.size() + " counselors to DTOs");
         return counselorDtos;
+    }
+
+    @Override
+    public PagedUserResponseDto getUsersByRole(Role role, int page, int size) {
+        log.info("Fetching users by role: " + role + " with page: " + page + " and size: " + size);
+
+        // Create pageable with sorting by createdAt descending
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // Fetch paginated users
+        Page<User> userPage = userRepository.findByRole(role, pageable);
+
+        // Convert to DTOs
+        List<UserResponseDto> userDtos = userPage.getContent().stream()
+                .map(UserTransformer::toUserResponseDto)
+                .collect(Collectors.toList());
+
+        // Build paginated response
+        PagedUserResponseDto response = PagedUserResponseDto.builder()
+                .users(userDtos)
+                .currentPage(userPage.getNumber())
+                .totalPages(userPage.getTotalPages())
+                .totalElements(userPage.getTotalElements())
+                .pageSize(userPage.getSize())
+                .first(userPage.isFirst())
+                .last(userPage.isLast())
+                .build();
+
+        log.info("Found " + userDtos.size() + " users for role: " + role + " (page " + (page + 1) + "/"
+                + userPage.getTotalPages() + ")");
+
+        return response;
     }
 
 }
