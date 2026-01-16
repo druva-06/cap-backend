@@ -21,7 +21,7 @@ public class UserRequestDto {
     @Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     String phoneNumber;
 
-    @Pattern(regexp = "^(http|https)://.*$", message = "Invalid profile picture URL")
+    @Pattern(regexp = "^$|^(http|https)://.*$", message = "Invalid profile picture URL")
     String profilePicture;
 
     @NotBlank(message = "Role name is required")

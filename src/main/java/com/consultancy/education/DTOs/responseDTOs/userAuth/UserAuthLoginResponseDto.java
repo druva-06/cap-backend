@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -34,4 +36,24 @@ public class UserAuthLoginResponseDto {
 
     @Schema(description = "User response DTO containing user details")
     UserResponseDto user;
+
+    @Schema(description = "User permissions including role and additional permissions")
+    UserPermissionInfo permissions;
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class UserPermissionInfo {
+        @Schema(description = "User's role name", example = "ADMIN")
+        String roleName;
+
+        @Schema(description = "All permissions (role + additional)", example = "[\"LEAD_VIEW_ALL\", \"APPLICATION_APPROVE\"]")
+        List<String> allPermissions;
+
+        @Schema(description = "Permissions grouped by category")
+        Map<String, List<String>> categories;
+    }
 }

@@ -33,7 +33,6 @@ public class UserPermissionController {
      * Get all permissions for a user (role permissions + additional permissions)
      */
     @GetMapping("/{userId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'COUNSELOR')")
     public ResponseEntity<?> getUserPermissions(@PathVariable Long userId) {
         try {
             UserPermissionsResponseDto responseDto = permissionService.getUserPermissions(userId);

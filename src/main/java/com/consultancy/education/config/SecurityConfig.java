@@ -33,6 +33,9 @@ public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
             "/auth/signup",
+            "/auth/signup/student",
+            "/auth/signup/invited",
+            "/invitation/validate",
             "/auth/login",
             "/auth/forgotPassword/**",
             "/auth/resendVerificationCode/**",
@@ -53,8 +56,7 @@ public class SecurityConfig {
                         // allow preflight OPTIONS requests without authentication
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
-                        .anyRequest().authenticated()
-                )
+                        .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(customAuthenticationEntryPoint()) // 401 handler
                         .accessDeniedHandler(customAccessDeniedHandler()) // 403 handler
@@ -71,8 +73,7 @@ public class SecurityConfig {
             response.setContentType("application/json");
             String json = String.format(
                     "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required or token is invalid\",\"path\":\"%s\"}",
-                    request.getRequestURI()
-            );
+                    request.getRequestURI());
             response.getWriter().write(json);
         };
     }
@@ -84,8 +85,7 @@ public class SecurityConfig {
             response.setContentType("application/json");
             String json = String.format(
                     "{\"status\":403,\"error\":\"Forbidden\",\"message\":\"You do not have permission to access this resource\",\"path\":\"%s\"}",
-                    request.getRequestURI()
-            );
+                    request.getRequestURI());
             response.getWriter().write(json);
         };
     }
@@ -96,14 +96,17 @@ public class SecurityConfig {
     }
 
     /**
-     * CORS configuration bean used by both Spring MVC and Spring Security (via .cors()).
+     * CORS configuration bean used by both Spring MVC and Spring Security (via
+     * .cors()).
      * Adjust allowedOrigins/allowedHeaders/allowCredentials to your needs.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // DEV: set to your dev origin. If you need cookies/auth, use explicit origin and allowCredentials(true).
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://127.0.0.1:3000", "https://wow-cap-frontend.vercel.app/"));
+        // DEV: set to your dev origin. If you need cookies/auth, use explicit origin
+        // and allowCredentials(true).
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:3000", "http://127.0.0.1:3000", "https://wow-cap-frontend.vercel.app/"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         // Explicitly allow Authorization so browser preflight permits the header
         configuration.setAllowedHeaders(List.of(
@@ -113,8 +116,7 @@ public class SecurityConfig {
                 "Origin",
                 "X-Requested-With",
                 "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-        ));
+                "Access-Control-Request-Headers"));
         // Expose Authorization header if the client needs to read it
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true); // if you will send cookies/credentials. Remove if not needed.

@@ -28,8 +28,7 @@ public class CognitoJwtAuthFilter extends OncePerRequestFilter {
     public CognitoJwtAuthFilter(String userPoolId, String region) {
         String jwkUrl = String.format(
                 "https://cognito-idp.%s.amazonaws.com/%s/.well-known/jwks.json",
-                region, userPoolId
-        );
+                region, userPoolId);
         this.jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkUrl).build();
         log.info("CognitoJwtAuthFilter initialized with JWK URL: {}", jwkUrl);
     }
@@ -68,27 +67,30 @@ public class CognitoJwtAuthFilter extends OncePerRequestFilter {
                     // Extract Cognito groups and convert to ROLE_ authorities
                     List<String> groups = jwt.getClaimAsStringList("cognito:groups");
 
+                    List<GrantedAuthority> authorities;
                     if (groups == null || groups.isEmpty()) {
-                        log.warn("No Cognito groups found for user {}", jwt.getClaimAsString("username"));
-                        throw new RuntimeException("No group assigned to user");
+                        log.warn("No Cognito groups found for user {}, assigning default USER role",
+                                jwt.getClaimAsString("username"));
+                        authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
+                    } else {
+                        authorities = groups.stream()
+                                .map(g -> new SimpleGrantedAuthority("ROLE_" + g.toUpperCase()))
+                                .collect(Collectors.toList());
                     }
 
                     String username = jwt.getClaimAsString("username");
                     MDC.put("user", username);
 
-                    List<GrantedAuthority> authorities = groups.stream()
-                            .map(g -> new SimpleGrantedAuthority("ROLE_" + g.toUpperCase()))
-                            .collect(Collectors.toList());
-
                     log.info("User {} authenticated with roles {}", username, authorities);
 
                     // Set Spring Security context
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(username, null, authorities);
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            username, null, authorities);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
                 } catch (Exception ex) {
-                    log.error("JWT authentication failed for request {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+                    log.error("JWT authentication failed for request {}: {}", request.getRequestURI(), ex.getMessage(),
+                            ex);
                     SecurityContextHolder.clearContext();
                     // do NOT short-circuit the chain; let Security handle unauthorized response
                 }

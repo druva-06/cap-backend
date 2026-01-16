@@ -222,10 +222,6 @@ public class PermissionServiceImpl implements PermissionService {
                 Role role = roleRepository.findById(roleId)
                                 .orElseThrow(() -> new NotFoundException("Role not found with ID: " + roleId));
 
-                if (role.getIsSystemRole()) {
-                        throw new BadRequestException("Cannot modify permissions for system roles");
-                }
-
                 Set<Permission> permissions = new HashSet<>();
                 for (Long permissionId : permissionIds) {
                         Permission permission = permissionRepository.findById(permissionId)
@@ -248,10 +244,6 @@ public class PermissionServiceImpl implements PermissionService {
                 Role role = roleRepository.findByIdWithPermissions(roleId);
                 if (role == null) {
                         throw new NotFoundException("Role not found with ID: " + roleId);
-                }
-
-                if (role.getIsSystemRole()) {
-                        throw new BadRequestException("Cannot modify permissions for system roles");
                 }
 
                 // Remove permissions by iterating to ensure proper JPA collection management

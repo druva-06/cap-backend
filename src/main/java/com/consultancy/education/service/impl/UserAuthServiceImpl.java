@@ -6,6 +6,8 @@ import com.consultancy.education.DTOs.requestDTOs.userAuth.ChangePasswordRequest
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthLoginRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthRefreshRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.userAuth.UserAuthSignUpRequestDto;
+import com.consultancy.education.DTOs.responseDTOs.permission.PermissionResponseDto;
+import com.consultancy.education.DTOs.responseDTOs.user.UserPermissionsResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthLoginResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.userAuth.UserAuthRefreshResponseDto;
 import com.consultancy.education.exception.CustomException;
@@ -14,6 +16,7 @@ import com.consultancy.education.model.Student;
 import com.consultancy.education.model.User;
 import com.consultancy.education.repository.RoleRepository;
 import com.consultancy.education.repository.UserRepository;
+import com.consultancy.education.service.PermissionService;
 import com.consultancy.education.service.UserAuthService;
 import com.consultancy.education.transformer.UserAuthTransformer;
 import com.consultancy.education.transformer.UserTransformer;
@@ -24,8 +27,8 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,6 +37,7 @@ public class UserAuthServiceImpl implements UserAuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final CognitoIdentityProviderClient cognitoClient;
+    private final PermissionService permissionService;
 
     @Value("${aws.cognito.userPoolId}")
     private String userPoolId;
@@ -45,10 +49,11 @@ public class UserAuthServiceImpl implements UserAuthService {
     private String clientSecret;
 
     UserAuthServiceImpl(UserRepository userRepository, RoleRepository roleRepository,
-            CognitoIdentityProviderClient cognitoClient) {
+            CognitoIdentityProviderClient cognitoClient, PermissionService permissionService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.cognitoClient = cognitoClient;
+        this.permissionService = permissionService;
     }
 
     @Override
@@ -203,6 +208,38 @@ public class UserAuthServiceImpl implements UserAuthService {
             }
 
             UserTransformer.intoUserAuthLoginRes(user, userAuthLoginResponseDto);
+
+            // Add user permissions to login response
+            try {
+                UserPermissionsResponseDto userPermissions = permissionService.getUserPermissions(user.getId());
+
+                // Extract permission names
+                List<String> allPermissionNames = userPermissions.getAllPermissions().stream()
+                        .map(PermissionResponseDto::getName)
+                        .collect(Collectors.toList());
+
+                // Group permissions by category
+                Map<String, List<String>> categorizedPermissions = userPermissions.getAllPermissions().stream()
+                        .filter(p -> p.getCategory() != null)
+                        .collect(Collectors.groupingBy(
+                                PermissionResponseDto::getCategory,
+                                Collectors.mapping(PermissionResponseDto::getName, Collectors.toList())));
+
+                // Set permissions in response
+                UserAuthLoginResponseDto.UserPermissionInfo permissionInfo = UserAuthLoginResponseDto.UserPermissionInfo
+                        .builder()
+                        .roleName(user.getRole().getName())
+                        .allPermissions(allPermissionNames)
+                        .categories(categorizedPermissions)
+                        .build();
+
+                userAuthLoginResponseDto.setPermissions(permissionInfo);
+
+                log.info("Permissions added to login response for user: {}", email);
+            } catch (Exception e) {
+                log.error("Error fetching permissions for user {}: {}", email, e.getMessage());
+                // Don't fail login if permission fetch fails, just log the error
+            }
 
             log.info("Login process completed successfully for email: {}", email);
 

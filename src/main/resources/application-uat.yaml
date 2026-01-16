@@ -1,4 +1,7 @@
 # UAT database configuration
+# To enable dev mode for email debugging (returns email in API response):
+# Run with: --spring.profiles.active=dev
+# Or set environment variable: SPRING_PROFILES_ACTIVE=dev
 
 spring:
   datasource:
@@ -8,12 +11,29 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:dummy@example.com}
+    password: ${MAIL_PASSWORD:dummy}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            trust: ${MAIL_HOST:smtp.gmail.com}
 
 aws:
   cognito:
     userPoolId: ${COGNITO_USER_POOL_ID}
     clientId: ${COGNITO_CLIENT_ID}
     clientSecret: ${COGNITO_CLIENT_SECRET}
+    region: ${AWS_REGION:ap-south-2}
+    accessKeyId: ${IAM_DRUVA_CAP_ACCESS_KEY_ID}
+    secretAccessKey: ${IAM_DRUVA_CAP_SECRET_ACCESS_KEY}
   s3:
     bucketName: ${S3_BUCKET_NAME}
     accessKeyId: ${IAM_DRUVA_CAP_ACCESS_KEY_ID}
@@ -21,6 +41,13 @@ aws:
   region: ap-south-2
   secret:
     names: cap/uat/credentials
+
+app:
+  name: Career Advice Point
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  email:
+    sendActualEmails: ${SEND_ACTUAL_EMAILS:false}  # Set to true to send real emails, false to return in API response
 
 logging:
   level:

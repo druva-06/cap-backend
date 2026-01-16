@@ -48,7 +48,8 @@ public class UserController {
         try {
             UserResponseDto responseDto = userService.addUser(userRequestDto);
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(new ApiSuccessResponse<>(responseDto, "User created successfully", 201));
+                    .body(new ApiSuccessResponse<>(responseDto,
+                            "Invitation sent successfully. User will receive signup link via email.", 201));
         } catch (AlreadyExistException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ApiFailureResponse<>(e.getErrors(), e.getMessage(), 409));

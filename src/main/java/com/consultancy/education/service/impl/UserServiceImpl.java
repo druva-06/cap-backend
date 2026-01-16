@@ -1,16 +1,20 @@
 package com.consultancy.education.service.impl;
 
+import com.consultancy.education.DTOs.requestDTOs.invitation.InvitationRequestDto;
 import com.consultancy.education.DTOs.requestDTOs.user.UserRequestDto;
+import com.consultancy.education.DTOs.responseDTOs.invitation.InvitationResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.user.CounselorDto;
 import com.consultancy.education.DTOs.responseDTOs.user.PagedUserResponseDto;
 import com.consultancy.education.DTOs.responseDTOs.user.UserResponseDto;
 import com.consultancy.education.enums.DocumentType;
+import com.consultancy.education.exception.AlreadyExistException;
 import com.consultancy.education.exception.NotFoundException;
 import com.consultancy.education.model.Role;
 import com.consultancy.education.model.User;
 import com.consultancy.education.repository.RoleRepository;
 import com.consultancy.education.repository.StudentRepository;
 import com.consultancy.education.repository.UserRepository;
+import com.consultancy.education.service.InvitationService;
 import com.consultancy.education.service.UserService;
 import com.consultancy.education.transformer.UserTransformer;
 import jakarta.annotation.PostConstruct;
@@ -44,6 +48,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final StudentRepository studentRepository;
     private final RoleRepository roleRepository;
+    private final InvitationService invitationService;
     private S3Client s3Client;
 
     @Value("${aws.s3.bucketName}")
@@ -56,10 +61,11 @@ public class UserServiceImpl implements UserService {
     private String secretAccessKey;
 
     public UserServiceImpl(UserRepository userRepository, StudentRepository studentRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository, InvitationService invitationService) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.roleRepository = roleRepository;
+        this.invitationService = invitationService;
     }
 
     @PostConstruct
@@ -71,26 +77,51 @@ public class UserServiceImpl implements UserService {
                 .build();
     }
 
-    @Override
+    @Transactional
     public UserResponseDto addUser(UserRequestDto userRequestDto) {
-        // boolean existsByEmail =
-        // userRepository.existsByEmail(userRequestDto.getEmail());
-        // boolean existsByPhoneNumber =
-        // userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber());
-        // if(existsByEmail || existsByPhoneNumber){
-        // List<String> errors = new ArrayList<>();
-        // if(existsByEmail){
-        // errors.add("Email already exists");
-        // }
-        // if(existsByPhoneNumber){
-        // errors.add("Phone number already exists");
-        // }
-        // throw new AlreadyExistException(errors);
-        // }
-        // User user = UserTransformer.toEntity(userRequestDto);
-        // user = userRepository.save(user);
-        // return UserTransformer.toResDTO(user);
-        return null;
+        log.info("Creating user invitation for email: {}", userRequestDto.getEmail());
+
+        // Check if user already exists
+        if (userRepository.existsByEmail(userRequestDto.getEmail())) {
+            throw new AlreadyExistException(List.of("User with this email already exists"));
+        }
+
+        if (userRepository.existsByPhoneNumber(userRequestDto.getPhoneNumber())) {
+            throw new AlreadyExistException(List.of("User with this phone number already exists"));
+        }
+
+        // Parse name into first and last name
+        String[] nameParts = userRequestDto.getName().trim().split("\\s+", 2);
+        String firstName = nameParts[0];
+        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+
+        // Create invitation request
+        InvitationRequestDto invitationRequest = InvitationRequestDto.builder()
+                .email(userRequestDto.getEmail())
+                .roleName(userRequestDto.getRoleName())
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(userRequestDto.getPhoneNumber())
+                .expiryDays(7) // Default 7 days expiry
+                .build();
+
+        // Create invitation using InvitationService
+        // TODO: Get actual logged-in user ID from security context
+        Long invitedByUserId = 1L; // Placeholder - should be extracted from authentication
+
+        InvitationResponseDto invitation = invitationService.createInvitation(invitationRequest, invitedByUserId);
+
+        log.info("Invitation created successfully. User will receive signup link via email.");
+
+        // Return a response indicating invitation was sent
+        // Note: User is not actually created yet, will be created when they sign up
+        return UserResponseDto.builder()
+                .email(userRequestDto.getEmail())
+                .firstName(firstName)
+                .lastName(lastName)
+                .phoneNumber(userRequestDto.getPhoneNumber())
+                .role(userRequestDto.getRoleName())
+                .build();
     }
 
     @Override
