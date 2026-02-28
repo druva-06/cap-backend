@@ -31,6 +31,9 @@ public class SecurityConfig {
     @Value("${aws.region}")
     private String region;
 
+    @Value("${cors.allowed-origins}")
+    private List<String> allowedOrigins;
+
     private static final String[] PUBLIC_ENDPOINTS = {
             "/auth/signup",
             "/auth/signup/student",
@@ -42,7 +45,7 @@ public class SecurityConfig {
             "/auth/confirmVerificationCode",
             "/auth/confirmForgotPassword",
             "/auth/refresh",
-            "/actuator/**",
+            "/actuator/health",
             "/swagger-ui/**",
             "/v3/**"
     };
@@ -106,16 +109,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // DEV: set to your dev origin. If you need cookies/auth, use explicit origin
         // and allowCredentials(true).
-        configuration.setAllowedOrigins(
-                List.of(
-                        "http://localhost:3000",
-                        "http://localhost:3001",
-                        "http://127.0.0.1:3000",
-                        "http://127.0.0.1:3001",
-                        "https://meritcap.com",
-                        "https://www.meritcap.com",
-                        "https://admin.meritcap.com",
-                        "https://api.meritcap.com"));
+        configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         // Explicitly allow Authorization so browser preflight permits the header
         configuration.setAllowedHeaders(List.of(

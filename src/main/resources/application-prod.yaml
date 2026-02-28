@@ -8,7 +8,7 @@ spring:
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
@@ -47,9 +47,26 @@ app:
     sendActualEmails: ${SEND_ACTUAL_EMAILS:false}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health
   health:
     mail:
       enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+cors:
+  allowed-origins:
+    - https://meritcap.com
+    - https://www.meritcap.com
+    - https://admin.meritcap.com
+    - https://api.meritcap.com
 
 logging:
   level:

@@ -59,25 +59,25 @@ See [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md) for full setup instru
 
 ## Roles
 
-| Role | Description |
-|------|-------------|
-| ADMIN | Full system access |
-| COUNSELOR | Manage leads and students |
-| STUDENT | Own profile and applications |
-| COLLEGE | College info and applications |
-| SUB_AGENT | Limited partner access |
+| Role      | Description                   |
+| --------- | ----------------------------- |
+| ADMIN     | Full system access            |
+| COUNSELOR | Manage leads and students     |
+| STUDENT   | Own profile and applications  |
+| COLLEGE   | College info and applications |
+| SUB_AGENT | Limited partner access        |
 
 ## API
 
 All endpoints are under `/api`. Auth required via `Authorization: Bearer <jwt>` header.
 
-| Group | Path | Description |
-|-------|------|-------------|
-| Auth | `/api/auth/*` | Signup, login, password reset |
-| Students | `/api/students/*` | Student profiles |
-| Leads | `/api/leads/*` | Lead management |
-| Admin | `/api/admin/*` | Admin operations |
-| Colleges | `/api/colleges/*` | College & course data |
+| Group    | Path              | Description                   |
+| -------- | ----------------- | ----------------------------- |
+| Auth     | `/api/auth/*`     | Signup, login, password reset |
+| Students | `/api/students/*` | Student profiles              |
+| Leads    | `/api/leads/*`    | Lead management               |
+| Admin    | `/api/admin/*`    | Admin operations              |
+| Colleges | `/api/colleges/*` | College & course data         |
 
 Swagger UI: `http://localhost:8080/api/swagger-ui/index.html`
 

@@ -1,28 +1,13 @@
 package com.meritcap.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Web MVC configuration.
+ * CORS is handled centrally via SecurityConfig CorsConfigurationSource bean.
+ */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins(
-                        "http://localhost:3000",
-                        "http://localhost:3001",
-                        "http://127.0.0.1:3000",
-                        "http://127.0.0.1:3001",
-                        "https://meritcap.com",
-                        "https://www.meritcap.com",
-                        "https://admin.meritcap.com",
-                        "https://api.meritcap.com")
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
-                .allowCredentials(true)
-                .exposedHeaders("Authorization", "Content-Type")
-                .maxAge(3600);
-    }
+    // CORS configured in SecurityConfig.corsConfigurationSource()
 }

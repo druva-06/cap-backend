@@ -2,12 +2,12 @@
 
 ## Prerequisites
 
-| Tool | Version | Install |
-|------|---------|---------|
-| JDK | 17+ | `brew install openjdk@17` or [Amazon Corretto](https://aws.amazon.com/corretto/) |
-| Maven | 3.6+ | `brew install maven` |
-| Git | any | `brew install git` |
-| SSH key | — | `~/.ssh/wowcap-deployer` (get from team lead) |
+| Tool    | Version | Install                                                                          |
+| ------- | ------- | -------------------------------------------------------------------------------- |
+| JDK     | 17+     | `brew install openjdk@17` or [Amazon Corretto](https://aws.amazon.com/corretto/) |
+| Maven   | 3.6+    | `brew install maven`                                                             |
+| Git     | any     | `brew install git`                                                               |
+| SSH key | —       | `~/.ssh/wowcap-deployer` (get from team lead)                                    |
 
 No local MySQL installation needed — you connect to the production DB via SSH tunnel.
 
@@ -37,11 +37,11 @@ The app will be available at `http://localhost:8080/api/swagger-ui/index.html`.
 
 The backend uses Spring profiles. The default profile is `dev`.
 
-| Profile | File | Purpose |
-|---------|------|---------|
-| `dev` | `application-dev.yaml` | Local development (SSH tunnel to prod DB) |
-| `uat` | `application-uat.yaml` | UAT environment |
-| `prod` | `application-prod.yaml` | Production (K8s secrets) |
+| Profile | File                    | Purpose                                   |
+| ------- | ----------------------- | ----------------------------------------- |
+| `dev`   | `application-dev.yaml`  | Local development (SSH tunnel to prod DB) |
+| `uat`   | `application-uat.yaml`  | UAT environment                           |
+| `prod`  | `application-prod.yaml` | Production (K8s secrets)                  |
 
 ### `.env` file
 
@@ -167,10 +167,10 @@ Install **Extension Pack for Java** and **Spring Boot Extension Pack**, then add
 
 ## Common Issues
 
-| Problem | Solution |
-|---------|----------|
-| Port 3306 in use | Stop local MySQL: `brew services stop mysql` |
-| Port 8080 in use | `lsof -i :8080` then `kill <PID>` |
+| Problem            | Solution                                                         |
+| ------------------ | ---------------------------------------------------------------- |
+| Port 3306 in use   | Stop local MySQL: `brew services stop mysql`                     |
+| Port 8080 in use   | `lsof -i :8080` then `kill <PID>`                                |
 | Lombok not working | Install Lombok plugin, enable annotation processing, restart IDE |
-| SSH tunnel drops | Re-run `./start-db-tunnel.sh` |
-| Maven build fails | `mvn dependency:purge-local-repository && mvn clean install -U` |
+| SSH tunnel drops   | Re-run `./start-db-tunnel.sh`                                    |
+| Maven build fails  | `mvn dependency:purge-local-repository && mvn clean install -U`  |

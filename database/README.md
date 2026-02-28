@@ -48,11 +48,11 @@ The seed scripts use `INSERT ... ON DUPLICATE KEY UPDATE` so they are safe to re
 
 The application requires these rows to exist before users can sign up or use the system:
 
-| Script | What it seeds | Count |
-|--------|--------------|-------|
-| `001_seed_roles.sql` | System roles (ADMIN, COUNSELOR, STUDENT, COLLEGE, SUB_AGENT) | 5 |
-| `002_seed_permissions.sql` | Permissions across 18 categories | 178 |
-| `003_seed_role_permissions.sql` | Maps permissions to each role | ~277 mappings |
+| Script                          | What it seeds                                                | Count         |
+| ------------------------------- | ------------------------------------------------------------ | ------------- |
+| `001_seed_roles.sql`            | System roles (ADMIN, COUNSELOR, STUDENT, COLLEGE, SUB_AGENT) | 5             |
+| `002_seed_permissions.sql`      | Permissions across 18 categories                             | 178           |
+| `003_seed_role_permissions.sql` | Maps permissions to each role                                | ~277 mappings |
 
 ## Running Migrations
 

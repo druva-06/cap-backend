@@ -24,7 +24,7 @@ public class WishlistController {
     private final WishlistService wishlistService;
 
     @PostMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> addWishlistItem(
             @PathVariable Long studentId,
             @Valid @RequestBody AddWishlistItemRequest request) {
@@ -46,7 +46,7 @@ public class WishlistController {
     }
 
     @GetMapping
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getWishlistItems(@PathVariable Long studentId) {
         log.info("Received request to fetch wishlist items for student {}", studentId);
         try {
@@ -65,7 +65,7 @@ public class WishlistController {
     }
 
     @DeleteMapping("/{wishlistItemId}")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> removeWishlistItem(
             @PathVariable Long studentId,
             @PathVariable Long wishlistItemId) {
@@ -86,7 +86,7 @@ public class WishlistController {
     }
 
     @GetMapping("/count")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getWishlistCount(@PathVariable Long studentId) {
         log.info("Received request to count wishlist items for student {}", studentId);
         try {

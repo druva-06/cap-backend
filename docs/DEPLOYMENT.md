@@ -6,23 +6,23 @@ MeritCap runs on a single **VPS** (82.112.234.51) with **MicroK8s** for containe
 
 ## Infrastructure
 
-| Component | Details |
-|-----------|---------|
-| VPS | Hostinger VPS, Ubuntu, 82.112.234.51 |
-| Container runtime | MicroK8s v1.28 |
-| K8s namespace | `prod` |
+| Component          | Details                                          |
+| ------------------ | ------------------------------------------------ |
+| VPS                | Hostinger VPS, Ubuntu, 82.112.234.51             |
+| Container runtime  | MicroK8s v1.28                                   |
+| K8s namespace      | `prod`                                           |
 | Container registry | `ghcr.io/druva-06/meritcap-{backend,user,admin}` |
-| Database | MySQL 8.0 on VPS (localhost:3306) |
-| DNS / SSL | Cloudflare (meritcap.com) |
-| Auth | AWS Cognito (ap-south-2) |
+| Database           | MySQL 8.0 on VPS (localhost:3306)                |
+| DNS / SSL          | Cloudflare (meritcap.com)                        |
+| Auth               | AWS Cognito (ap-south-2)                         |
 
 ### Domains
 
-| Domain | Service |
-|--------|---------|
-| `api.meritcap.com` | Backend API |
-| `meritcap.com` / `www.meritcap.com` | User frontend |
-| `admin.meritcap.com` | Admin frontend |
+| Domain                              | Service        |
+| ----------------------------------- | -------------- |
+| `api.meritcap.com`                  | Backend API    |
+| `meritcap.com` / `www.meritcap.com` | User frontend  |
+| `admin.meritcap.com`                | Admin frontend |
 
 ## Prerequisites
 
@@ -41,11 +41,11 @@ Pushes to the `main` branch trigger automatic deployment via `.github/workflows/
 
 ### Required GitHub Secrets
 
-| Secret | Description |
-|--------|-------------|
-| `PROD_VPS_HOST` | VPS IP address |
-| `VPS_SSH_KEY` | SSH private key for `deployer` user |
-| `GITHUB_TOKEN` | Auto-provided, used for GHCR login |
+| Secret          | Description                         |
+| --------------- | ----------------------------------- |
+| `PROD_VPS_HOST` | VPS IP address                      |
+| `VPS_SSH_KEY`   | SSH private key for `deployer` user |
+| `GITHUB_TOKEN`  | Auto-provided, used for GHCR login  |
 
 ## Manual Deployment
 
@@ -83,14 +83,14 @@ microk8s kubectl get pods -n prod
 
 All K8s files are in `k8s/`:
 
-| File | Purpose |
-|------|---------|
+| File                       | Purpose                                                |
+| -------------------------- | ------------------------------------------------------ |
 | `meritcap-deployment.yaml` | Backend deployment (replicas, image, env vars, probes) |
-| `meritcap-service.yaml` | Backend ClusterIP service |
-| `user-frontend.yaml` | User frontend deployment + service |
-| `admin-frontend.yaml` | Admin frontend deployment + service |
-| `ingress.yaml` | Nginx ingress rules for all 3 domains |
-| `secrets-prod.yaml` | K8s Secret with DB creds, Cognito config, etc. |
+| `meritcap-service.yaml`    | Backend ClusterIP service                              |
+| `user-frontend.yaml`       | User frontend deployment + service                     |
+| `admin-frontend.yaml`      | Admin frontend deployment + service                    |
+| `ingress.yaml`             | Nginx ingress rules for all 3 domains                  |
+| `secrets-prod.yaml`        | K8s Secret with DB creds, Cognito config, etc.         |
 
 ### Applying Manifests
 
@@ -154,16 +154,19 @@ microk8s kubectl rollout undo deployment/meritcap-backend -n prod --to-revision=
 ## Troubleshooting
 
 **Pod won't start:**
+
 ```bash
 microk8s kubectl describe pod <pod-name> -n prod
 microk8s kubectl logs <pod-name> -n prod
 ```
 
 **Database connection failed:**
+
 - Check `secrets-prod.yaml` has correct DB credentials
 - Verify MySQL is running: `sudo systemctl status mysql`
 - Check from inside the pod: `microk8s kubectl exec -it <pod> -n prod -- env | grep DB`
 
 **Image pull errors:**
+
 - Ensure GHCR secret exists: `microk8s kubectl get secret ghcr-secret -n prod`
 - Verify image tag exists: `docker pull ghcr.io/druva-06/meritcap-backend:prod-latest`
