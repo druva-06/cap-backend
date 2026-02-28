@@ -16,6 +16,7 @@ import com.meritcap.service.CognitoService;
 import com.meritcap.service.EmailService;
 import com.meritcap.service.InvitationService;
 import com.meritcap.service.SignupService;
+import jakarta.persistence.EntityManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +46,9 @@ public class SignupServiceImpl implements SignupService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private EntityManager entityManager;
+
     @Override
     @Transactional
     public SignupResponseDto signupStudent(StudentSignupRequestDto studentSignupRequestDto) {
@@ -55,9 +59,13 @@ public class SignupServiceImpl implements SignupService {
             throw new BadRequestException("User with this email already exists");
         }
 
-        // Get STUDENT role
+        // Get STUDENT role — validate before calling Cognito
         Role studentRole = roleRepository.findByName("STUDENT")
                 .orElseThrow(() -> new BadRequestException("STUDENT role not found in system"));
+
+        // Track whether Cognito user was created for cleanup
+        boolean cognitoUserCreated = false;
+        String email = studentSignupRequestDto.getEmail();
 
         try {
             // Parse full name
@@ -65,21 +73,22 @@ public class SignupServiceImpl implements SignupService {
             String firstName = nameParts[0];
             String lastName = nameParts.length > 1 ? nameParts[1] : "";
 
-            // Create Cognito user
+            // Step 1: Create Cognito user
             CognitoUserResponseDto cognitoUser = cognitoService.createUser(
-                    studentSignupRequestDto.getEmail(),
+                    email,
                     studentSignupRequestDto.getPassword(),
                     firstName,
                     lastName,
                     studentSignupRequestDto.getPhoneNumber());
+            cognitoUserCreated = true;
             log.info("Cognito user created successfully: {}", cognitoUser.getCognitoUserId());
 
             // Generate username from email
-            String username = studentSignupRequestDto.getEmail().split("@")[0];
+            String username = email.split("@")[0];
 
-            // Create user in database
+            // Step 2: Create user in database
             User user = User.builder()
-                    .email(studentSignupRequestDto.getEmail())
+                    .email(email)
                     .username(username)
                     .firstName(firstName)
                     .lastName(lastName)
@@ -93,15 +102,16 @@ public class SignupServiceImpl implements SignupService {
                     .build();
 
             User savedUser = userRepository.save(user);
+            // Flush immediately so DB constraint violations surface here, not at commit time
+            entityManager.flush();
             log.info("Student user created in database with ID: {}", savedUser.getId());
 
-            // Send welcome email
+            // Step 3: Send welcome email (best-effort, don't fail signup)
             EmailService.EmailDetails welcomeEmail = null;
             try {
                 welcomeEmail = emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
             } catch (Exception emailError) {
                 log.error("Failed to send welcome email to: {}", savedUser.getEmail(), emailError);
-                // Don't fail signup if email fails
             }
 
             // Build response
@@ -116,7 +126,6 @@ public class SignupServiceImpl implements SignupService {
                     .message("Student account created successfully. You can now log in.")
                     .requiresEmailVerification(false);
 
-            // Add email details if available (for dev mode)
             if (welcomeEmail != null) {
                 responseBuilder.welcomeEmailDetails(SignupResponseDto.WelcomeEmailDetailsDto.builder()
                         .recipientEmail(welcomeEmail.getRecipientEmail())
@@ -128,14 +137,11 @@ public class SignupServiceImpl implements SignupService {
             return responseBuilder.build();
 
         } catch (Exception e) {
-            log.error("Error during student signup process", e);
+            log.error("Error during student signup process for {}: {}", email, e.getMessage(), e);
 
-            // Cleanup: Try to delete Cognito user if database save failed
-            try {
-                cognitoService.deleteUser(studentSignupRequestDto.getEmail());
-                log.info("Cleaned up Cognito user after signup failure");
-            } catch (Exception cleanupError) {
-                log.error("Failed to cleanup Cognito user", cleanupError);
+            // Compensating action: delete Cognito user if DB save failed
+            if (cognitoUserCreated) {
+                deleteCognitoUserQuietly(email);
             }
 
             if (e instanceof BadRequestException) {
@@ -171,13 +177,11 @@ public class SignupServiceImpl implements SignupService {
         // Step 4: Generate username from email if not provided
         String username = signupRequestDto.getUsername();
         if (username == null || username.trim().isEmpty()) {
-            // Generate random username: first part of email + random 4 digits
             String emailPrefix = signupRequestDto.getEmail().split("@")[0];
             int randomNum = (int) (Math.random() * 10000);
             username = emailPrefix + randomNum;
             log.info("Generated random username: {}", username);
 
-            // If still exists, add more random digits
             int attempts = 0;
             while (userRepository.existsByUsername(username) && attempts < 10) {
                 randomNum = (int) (Math.random() * 100000);
@@ -191,26 +195,31 @@ public class SignupServiceImpl implements SignupService {
             throw new BadRequestException("Username already exists");
         }
 
+        // Track whether Cognito user was created for cleanup
+        boolean cognitoUserCreated = false;
+        String email = signupRequestDto.getEmail();
+
         try {
             // Step 6: Get invitation details
             InvitedUser invitation = invitedUserRepository.findByInvitationToken(
                     signupRequestDto.getInvitationToken())
                     .orElseThrow(() -> new BadRequestException("Invitation not found"));
 
-            // Step 7: Create Cognito user with username
+            // Step 7: Create Cognito user
             CognitoUserResponseDto cognitoUser = cognitoService.createUser(
-                    signupRequestDto.getEmail(),
+                    email,
                     signupRequestDto.getPassword(),
                     signupRequestDto.getFirstName() != null ? signupRequestDto.getFirstName()
                             : validation.getFirstName(),
                     signupRequestDto.getLastName() != null ? signupRequestDto.getLastName() : validation.getLastName(),
                     signupRequestDto.getPhoneNumber() != null ? signupRequestDto.getPhoneNumber()
                             : validation.getPhoneNumber());
+            cognitoUserCreated = true;
             log.info("Cognito user created successfully: {}", cognitoUser.getCognitoUserId());
 
             // Step 8: Create user in database
             User user = User.builder()
-                    .email(signupRequestDto.getEmail())
+                    .email(email)
                     .username(username)
                     .firstName(signupRequestDto.getFirstName() != null ? signupRequestDto.getFirstName()
                             : validation.getFirstName())
@@ -227,6 +236,8 @@ public class SignupServiceImpl implements SignupService {
                     .build();
 
             User savedUser = userRepository.save(user);
+            // Flush immediately so DB constraint violations surface here, not at commit time
+            entityManager.flush();
             log.info("User created in database with ID: {}", savedUser.getId());
 
             // Step 9: Activate invitation
@@ -236,13 +247,12 @@ public class SignupServiceImpl implements SignupService {
                     savedUser.getId());
             log.info("Invitation activated successfully");
 
-            // Send welcome email
+            // Send welcome email (best-effort)
             EmailService.EmailDetails welcomeEmail = null;
             try {
                 welcomeEmail = emailService.sendWelcomeEmail(savedUser.getEmail(), savedUser.getFirstName());
             } catch (Exception emailError) {
                 log.error("Failed to send welcome email to: {}", savedUser.getEmail(), emailError);
-                // Don't fail signup if email fails
             }
 
             // Step 10: Build response
@@ -257,7 +267,6 @@ public class SignupServiceImpl implements SignupService {
                     .message("Account created successfully. You can now log in.")
                     .requiresEmailVerification(false);
 
-            // Add email details if available (for dev mode)
             if (welcomeEmail != null) {
                 responseBuilder.welcomeEmailDetails(SignupResponseDto.WelcomeEmailDetailsDto.builder()
                         .recipientEmail(welcomeEmail.getRecipientEmail())
@@ -269,20 +278,30 @@ public class SignupServiceImpl implements SignupService {
             return responseBuilder.build();
 
         } catch (Exception e) {
-            log.error("Error during signup process", e);
+            log.error("Error during invitation signup for {}: {}", email, e.getMessage(), e);
 
-            // Cleanup: Try to delete Cognito user if database save failed
-            try {
-                cognitoService.deleteUser(signupRequestDto.getEmail());
-                log.info("Cleaned up Cognito user after signup failure");
-            } catch (Exception cleanupError) {
-                log.error("Failed to cleanup Cognito user", cleanupError);
+            // Compensating action: delete Cognito user if DB save failed
+            if (cognitoUserCreated) {
+                deleteCognitoUserQuietly(email);
             }
 
             if (e instanceof BadRequestException) {
                 throw e;
             }
             throw new BadRequestException("Signup failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Attempts to delete a Cognito user silently for cleanup purposes.
+     * Logs errors but does not throw — used during compensating rollback.
+     */
+    private void deleteCognitoUserQuietly(String email) {
+        try {
+            cognitoService.deleteUser(email);
+            log.info("Cleaned up Cognito user after signup failure: {}", email);
+        } catch (Exception cleanupEx) {
+            log.error("Failed to clean up Cognito user {} after signup failure: {}", email, cleanupEx.getMessage());
         }
     }
 }

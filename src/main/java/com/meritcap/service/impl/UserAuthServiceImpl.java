@@ -24,6 +24,7 @@ import com.meritcap.utils.CognitoUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.*;
 
@@ -57,6 +58,7 @@ public class UserAuthServiceImpl implements UserAuthService {
     }
 
     @Override
+    @Transactional
     public String signup(UserAuthSignUpRequestDto userAuthSignUpRequestDto) {
         log.info("Signup service started for email: {}", userAuthSignUpRequestDto.getEmail());
 
@@ -74,6 +76,11 @@ public class UserAuthServiceImpl implements UserAuthService {
             log.error("Username Already Exists: {}", userAuthSignUpRequestDto.getUsername());
             throw new CustomException("Username Already Exists");
         }
+
+        // Validate role exists in DB before calling Cognito
+        String roleName = userAuthSignUpRequestDto.getRole();
+        Role role = roleRepository.findByNameIgnoreCase(roleName)
+                .orElseThrow(() -> new CustomException("Role not found: " + roleName));
 
         Map<String, AttributeType> attributes = new HashMap<>();
         attributes.put("email",
@@ -98,43 +105,50 @@ public class UserAuthServiceImpl implements UserAuthService {
 
         log.debug("SignUpRequest prepared: {}", signUpRequest);
 
-        try {
-            SignUpResponse response = cognitoClient.signUp(signUpRequest);
-            log.info("User signup request sent to Cognito for email: {}", userAuthSignUpRequestDto.getEmail());
+        // Track whether Cognito user was created so we can clean up on failure
+        boolean cognitoUserCreated = false;
+        String email = userAuthSignUpRequestDto.getEmail();
 
-            // Add user to Cognito group
-            String groupName = userAuthSignUpRequestDto.getRole(); // role is already a String
+        try {
+            // Step 1: Create user in Cognito
+            SignUpResponse response = cognitoClient.signUp(signUpRequest);
+            cognitoUserCreated = true;
+            log.info("User signup request sent to Cognito for email: {}", email);
+
+            // Step 2: Add user to Cognito group
+            String groupName = userAuthSignUpRequestDto.getRole();
             AdminAddUserToGroupRequest groupRequest = AdminAddUserToGroupRequest.builder()
                     .userPoolId(userPoolId)
-                    .username(userAuthSignUpRequestDto.getEmail())
+                    .username(email)
                     .groupName(groupName)
                     .build();
             cognitoClient.adminAddUserToGroup(groupRequest);
-            log.info("User {} added to Cognito group: {}", userAuthSignUpRequestDto.getEmail(), groupName);
+            log.info("User {} added to Cognito group: {}", email, groupName);
 
-            // Save user in local database
-            // Fetch role from database
-            String roleName = userAuthSignUpRequestDto.getRole();
-            Role role = roleRepository.findByNameIgnoreCase(roleName)
-                    .orElseThrow(() -> new CustomException("Role not found: " + roleName));
-
+            // Step 3: Save user in local database (within @Transactional)
             User user = UserAuthTransformer.toUserEntity(userAuthSignUpRequestDto, role);
 
-            // Only create Student entity if the role is STUDENT
             if ("STUDENT".equalsIgnoreCase(userAuthSignUpRequestDto.getRole())) {
                 Student student = new Student();
                 student.setUser(user);
                 user.setStudent(student);
-                log.info("Student record created for user: {}", userAuthSignUpRequestDto.getEmail());
+                log.info("Student record created for user: {}", email);
             }
 
             userRepository.save(user);
+            log.info("User {} saved in local database", email);
 
-            log.info("User {} saved in local database", userAuthSignUpRequestDto.getEmail());
             return "User Registered Successfully!";
+
         } catch (CognitoIdentityProviderException e) {
             String errorMessage = e.awsErrorDetails().errorMessage();
-            log.error("Signup error for email {}: {}", userAuthSignUpRequestDto.getEmail(), errorMessage);
+            log.error("Signup error for email {}: {}", email, errorMessage);
+
+            // Cognito threw an error — clean up if user was partially created
+            if (cognitoUserCreated) {
+                deleteCognitoUserQuietly(email);
+            }
+
             if (errorMessage.contains("An account with the given email already exists")) {
                 throw new CustomException("User already exists. Please log in.");
             } else if (errorMessage.contains("Invalid email address format")) {
@@ -147,9 +161,31 @@ public class UserAuthServiceImpl implements UserAuthService {
                 throw new CustomException(errorMessage);
             }
         } catch (Exception ex) {
-            log.error("Unexpected error during signup for email {}: {}", userAuthSignUpRequestDto.getEmail(),
-                    ex.getMessage(), ex);
+            log.error("Unexpected error during signup for email {}: {}", email, ex.getMessage(), ex);
+
+            // Clean up Cognito user if it was created but DB save failed
+            if (cognitoUserCreated) {
+                deleteCognitoUserQuietly(email);
+            }
+
             throw new CustomException("Unexpected error during signup. Please try again.");
+        }
+    }
+
+    /**
+     * Attempts to delete a Cognito user silently for cleanup purposes.
+     * Logs errors but does not throw — used during compensating rollback.
+     */
+    private void deleteCognitoUserQuietly(String email) {
+        try {
+            AdminDeleteUserRequest deleteRequest = AdminDeleteUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build();
+            cognitoClient.adminDeleteUser(deleteRequest);
+            log.info("Cleaned up Cognito user after signup failure: {}", email);
+        } catch (Exception cleanupEx) {
+            log.error("Failed to clean up Cognito user {} after signup failure: {}", email, cleanupEx.getMessage());
         }
     }
 
