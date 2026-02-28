@@ -1,4 +1,4 @@
-# Career Advice Point (CAP) Backend
+# MeritCap (CAP) Backend
 
 A comprehensive backend system for managing educational consultancy services, student applications, and lead generation.
 
@@ -26,10 +26,10 @@ CAP Backend is a Spring Boot application that provides REST APIs for:
 ## Project Structure
 
 ```
-cap-backend/
+meritcap-backend/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/consultancy/education/
+│   │   ├── java/com/meritcap/
 │   │   │   ├── api/              # External API integrations
 │   │   │   ├── config/           # Configuration classes
 │   │   │   ├── controller/       # REST controllers
@@ -104,7 +104,7 @@ cap-backend/
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd cap-backend
+cd meritcap-backend
 
 # Run with Maven
 mvn spring-boot:run -Dspring-boot.run.profiles=dev
@@ -118,10 +118,10 @@ java -jar target/education-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 
 ```bash
 # Build Docker image
-docker build -t cap-backend .
+docker build -t meritcap-backend .
 
 # Run container
-docker run -p 8080:8080 cap-backend
+docker run -p 8080:8080 meritcap-backend
 ```
 
 #### Using Docker Compose
@@ -203,8 +203,8 @@ Deployment configuration is in `buildspec.yml`.
 Kubernetes manifests are in the `k8s/` directory:
 
 ```bash
-kubectl apply -f k8s/cap-deployment.yaml
-kubectl apply -f k8s/cap-service.yaml
+kubectl apply -f k8s/meritcap-deployment.yaml
+kubectl apply -f k8s/meritcap-service.yaml
 ```
 
 ## Development Guidelines

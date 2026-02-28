@@ -2,7 +2,7 @@
 
 ## Overview
 
-Career Advice Point (CAP) Backend is a comprehensive educational consultancy management system built with Spring Boot. The system manages the complete lifecycle of student applications from lead generation to enrollment.
+MeritCap (CAP) Backend is a comprehensive educational consultancy management system built with Spring Boot. The system manages the complete lifecycle of student applications from lead generation to enrollment.
 
 ## Architecture Diagram
 
@@ -56,7 +56,7 @@ Career Advice Point (CAP) Backend is a comprehensive educational consultancy man
 
 ### 1. Controller Layer
 
-**Location**: `src/main/java/com/consultancy/education/controller/`
+**Location**: `src/main/java/com/meritcap/controller/`
 
 **Responsibility**: Handle HTTP requests and responses
 
@@ -78,7 +78,7 @@ Career Advice Point (CAP) Backend is a comprehensive educational consultancy man
 
 ### 2. Service Layer
 
-**Location**: `src/main/java/com/consultancy/education/service/`
+**Location**: `src/main/java/com/meritcap/service/`
 
 **Responsibility**: Business logic and orchestration
 
@@ -99,7 +99,7 @@ Career Advice Point (CAP) Backend is a comprehensive educational consultancy man
 
 ### 3. Repository Layer
 
-**Location**: `src/main/java/com/consultancy/education/repository/`
+**Location**: `src/main/java/com/meritcap/repository/`
 
 **Responsibility**: Data access and persistence
 
@@ -115,7 +115,7 @@ Career Advice Point (CAP) Backend is a comprehensive educational consultancy man
 
 ### 4. Model Layer
 
-**Location**: `src/main/java/com/consultancy/education/model/`
+**Location**: `src/main/java/com/meritcap/model/`
 
 **Responsibility**: Domain entities and JPA mappings
 
@@ -130,7 +130,7 @@ Career Advice Point (CAP) Backend is a comprehensive educational consultancy man
 
 ### 5. DTO Layer
 
-**Location**: `src/main/java/com/consultancy/education/DTOs/`
+**Location**: `src/main/java/com/meritcap/DTOs/`
 
 **Responsibility**: Data transfer between layers
 
@@ -150,7 +150,7 @@ DTOs/
 
 ### 6. Security Layer
 
-**Location**: `src/main/java/com/consultancy/education/security/`
+**Location**: `src/main/java/com/meritcap/security/`
 
 **Components**:
 

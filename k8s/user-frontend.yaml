@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: wowcap-user
+  name: meritcap-user
   namespace: prod
   labels:
-    app: wowcap-user
+    app: meritcap-user
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: wowcap-user
+      app: meritcap-user
   template:
     metadata:
       labels:
-        app: wowcap-user
+        app: meritcap-user
     spec:
       imagePullSecrets:
         - name: ghcr-secret
       containers:
-        - name: wowcap-user
-          image: ghcr.io/druva-06/wowcap-user:prod-latest
+        - name: meritcap-user
+          image: ghcr.io/druva-06/meritcap-user:prod-latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -40,11 +40,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: wowcap-user-svc
+  name: meritcap-user-svc
   namespace: prod
 spec:
   selector:
-    app: wowcap-user
+    app: meritcap-user
   ports:
     - port: 3000
       targetPort: 3000

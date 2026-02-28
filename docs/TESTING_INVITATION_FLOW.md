@@ -33,7 +33,7 @@
 
 4. **Check Email** (if email configured)
    - User should receive invitation email with:
-     - Subject: "You're invited to join Career Advice Point"
+     - Subject: "You're invited to join MeritCap"
      - Signup link: `${FRONTEND_URL}/signup?token={invitation_token}`
      - Expiry warning: "This invitation link will expire in 168 hours"
      - Professional HTML template with blue theme
@@ -118,7 +118,7 @@
 
    - Go to: `http://localhost:3000/signup` (no token parameter)
    - Should see:
-     - Title: "Join WowCap"
+     - Title: "Join MeritCap"
      - Subtitle: "Create your free account today"
      - No invitation banner
      - All fields enabled

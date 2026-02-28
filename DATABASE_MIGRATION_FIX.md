@@ -8,8 +8,8 @@ The login is failing with "model.Role with id 0" because the database migration 
 
 - **Type**: MySQL
 - **Host**: 82.112.234.51:3306
-- **Database**: cap_dev
-- **Username**: cap_dev
+- **Database**: meritcap_dev
+- **Username**: meritcap_dev
 - **Password**: zmhCuJR.uX3mB]4
 
 ## Quick Fix
@@ -19,14 +19,14 @@ The login is failing with "model.Role with id 0" because the database migration 
 1. **Connect to your MySQL database**:
 
    ```bash
-   mysql -h 82.112.234.51 -P 3306 -u cap_dev -p cap_dev
+   mysql -h 82.112.234.51 -P 3306 -u meritcap_dev -p meritcap_dev
    # Enter password when prompted: zmhCuJR.uX3mB]4
    ```
 
 2. **Run the migration script**:
 
    ```bash
-   source /Users/druva/Documents/Personal/wowcap/website/cap-backend/database/migrations/002_create_dynamic_roles_table_mysql.sql
+   source /Users/druva/Documents/Personal/meritcap/website/meritcap-backend/database/migrations/002_create_dynamic_roles_table_mysql.sql
    ```
 
    Or copy and paste the SQL from the file directly into MySQL console.
@@ -34,16 +34,16 @@ The login is failing with "model.Role with id 0" because the database migration 
 ### Option 2: Using a Database Client
 
 1. Open your database client (MySQL Workbench, DBeaver, DataGrip, etc.)
-2. Connect to: `82.112.234.51:3306` with username `cap_dev`
-3. Select database: `cap_dev`
+2. Connect to: `82.112.234.51:3306` with username `meritcap_dev`
+3. Select database: `meritcap_dev`
 4. Open and execute the MySQL migration script (see below)
 
 ### Option 3: Using Command Line
 
 ```bash
-cd /Users/druva/Documents/Personal/wowcap/website/cap-backend
+cd /Users/druva/Documents/Personal/meritcap/website/meritcap-backend
 
-mysql -h 82.112.234.51 -P 3306 -u cap_dev -p'zmhCuJR.uX3mB]4' cap_dev < database/migrations/002_create_dynamic_roles_table_mysql.sql
+mysql -h 82.112.234.51 -P 3306 -u meritcap_dev -p'zmhCuJR.uX3mB]4' meritcap_dev < database/migrations/002_create_dynamic_roles_table_mysql.sql
 ```
 
 ## What the Migration Does

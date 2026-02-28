@@ -32,18 +32,18 @@ aws:
     clientId: ${COGNITO_CLIENT_ID}
     clientSecret: ${COGNITO_CLIENT_SECRET}
     region: ${AWS_REGION:ap-south-2}
-    accessKeyId: ${IAM_DRUVA_CAP_ACCESS_KEY_ID}
-    secretAccessKey: ${IAM_DRUVA_CAP_SECRET_ACCESS_KEY}
+    accessKeyId: ${IAM_MERITCAP_ACCESS_KEY_ID}
+    secretAccessKey: ${IAM_MERITCAP_SECRET_ACCESS_KEY}
   s3:
     bucketName: ${S3_BUCKET_NAME}
-    accessKeyId: ${IAM_DRUVA_CAP_ACCESS_KEY_ID}
-    secretAccessKey: ${IAM_DRUVA_CAP_SECRET_ACCESS_KEY}
+    accessKeyId: ${IAM_MERITCAP_ACCESS_KEY_ID}
+    secretAccessKey: ${IAM_MERITCAP_SECRET_ACCESS_KEY}
   region: ap-south-2
   secret:
-    names: cap/uat/credentials
+    names: meritcap/uat/credentials
 
 app:
-  name: Career Advice Point
+  name: MeritCap
   frontend:
     url: ${FRONTEND_URL:http://localhost:3000}
   email:
@@ -52,5 +52,5 @@ app:
 logging:
   level:
     root: INFO
-    com.consultancy.education: DEBUG  # Enable DEBUG logs for this package
+    com.meritcap: DEBUG  # Enable DEBUG logs for this package
     org.springframework: WARN         # Reduce logs for Spring framework

@@ -32,7 +32,7 @@ This guide covers deployment procedures for the CAP Backend application across d
 ```bash
 # Clone repository
 git clone <repository-url>
-cd cap-backend
+cd meritcap-backend
 
 # Configure database
 cp src/main/resources/application-dev.properties.example \
@@ -50,13 +50,13 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 ```bash
 # Create database
 mysql -u root -p
-CREATE DATABASE cap_dev;
+CREATE DATABASE meritcap_dev;
 CREATE USER 'cap_user'@'localhost' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON cap_dev.* TO 'cap_user'@'localhost';
+GRANT ALL PRIVILEGES ON meritcap_dev.* TO 'cap_user'@'localhost';
 FLUSH PRIVILEGES;
 
 # Run migrations
-mysql -u cap_user -p cap_dev < database/migrations/001_create_leads_table.sql
+mysql -u cap_user -p meritcap_dev < database/migrations/001_create_leads_table.sql
 ```
 
 ### 2. UAT Environment
@@ -66,7 +66,7 @@ mysql -u cap_user -p cap_dev < database/migrations/001_create_leads_table.sql
 - ECS Cluster: `cap-uat-cluster`
 - RDS Instance: `cap-uat-db` (db.t3.medium)
 - Load Balancer: `cap-uat-alb`
-- ECR Repository: `cap-backend-uat`
+- ECR Repository: `meritcap-backend-uat`
 
 **Deployment Steps**:
 
@@ -75,20 +75,20 @@ mysql -u cap_user -p cap_dev < database/migrations/001_create_leads_table.sql
 mvn clean package -DskipTests
 
 # Build Docker image
-docker build -t cap-backend:uat .
+docker build -t meritcap-backend:uat .
 
 # Tag for ECR
 aws ecr get-login-password --region us-east-1 | \
   docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-east-1.amazonaws.com
 
-docker tag cap-backend:uat <account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend-uat:latest
+docker tag meritcap-backend:uat <account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend-uat:latest
 
 # Push to ECR
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend-uat:latest
+docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend-uat:latest
 
 # Update ECS service
 aws ecs update-service --cluster cap-uat-cluster \
-  --service cap-backend-service --force-new-deployment
+  --service meritcap-backend-service --force-new-deployment
 ```
 
 ### 3. Production Environment
@@ -98,21 +98,21 @@ aws ecs update-service --cluster cap-uat-cluster \
 - ECS Cluster: `cap-prod-cluster` (Multi-AZ)
 - RDS Instance: `cap-prod-db` (db.r5.large, Multi-AZ)
 - Load Balancer: `cap-prod-alb`
-- ECR Repository: `cap-backend-prod`
+- ECR Repository: `meritcap-backend-prod`
 - Auto Scaling: Min 2, Max 10 tasks
 
 **Deployment Steps**:
 
 ```bash
 # Same as UAT but with production tags
-docker build -t cap-backend:prod .
-docker tag cap-backend:prod <account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend-prod:v1.0.0
-docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend-prod:v1.0.0
+docker build -t meritcap-backend:prod .
+docker tag meritcap-backend:prod <account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend-prod:v1.0.0
+docker push <account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend-prod:v1.0.0
 
 # Update production service (with gradual rollout)
 aws ecs update-service --cluster cap-prod-cluster \
-  --service cap-backend-service \
-  --task-definition cap-backend:v1.0.0 \
+  --service meritcap-backend-service \
+  --task-definition meritcap-backend:v1.0.0 \
   --deployment-configuration "maximumPercent=200,minimumHealthyPercent=100"
 ```
 
@@ -139,7 +139,7 @@ ENTRYPOINT ["java", "-jar", "app.jar"]
 **Build Command**:
 
 ```bash
-docker build -t cap-backend:latest .
+docker build -t meritcap-backend:latest .
 ```
 
 ### Running the Container
@@ -148,7 +148,7 @@ docker build -t cap-backend:latest .
 
 ```bash
 docker run -d \
-  --name cap-backend \
+  --name meritcap-backend \
   -p 8080:8080 \
   -e SPRING_PROFILES_ACTIVE=prod \
   -e DB_HOST=mysql-host \
@@ -156,7 +156,7 @@ docker run -d \
   -e DB_NAME=cap_prod \
   -e DB_USER=cap_user \
   -e DB_PASSWORD=secure_password \
-  cap-backend:latest
+  meritcap-backend:latest
 ```
 
 ### Docker Compose
@@ -227,28 +227,28 @@ sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 
 ### Configuration Files
 
-**cap-deployment.yaml**:
+**meritcap-deployment.yaml**:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cap-backend
+  name: meritcap-backend
   labels:
-    app: cap-backend
+    app: meritcap-backend
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: cap-backend
+      app: meritcap-backend
   template:
     metadata:
       labels:
-        app: cap-backend
+        app: meritcap-backend
     spec:
       containers:
-        - name: cap-backend
-          image: <account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend:latest
+        - name: meritcap-backend
+          image: <account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend:latest
           ports:
             - containerPort: 8080
           env:
@@ -290,17 +290,17 @@ spec:
             periodSeconds: 5
 ```
 
-**cap-service.yaml**:
+**meritcap-service.yaml**:
 
 ```yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: cap-backend-service
+  name: meritcap-backend-service
 spec:
   type: LoadBalancer
   selector:
-    app: cap-backend
+    app: meritcap-backend
   ports:
     - protocol: TCP
       port: 80
@@ -320,8 +320,8 @@ kubectl create secret generic cap-secrets \
 **Deploy**:
 
 ```bash
-kubectl apply -f k8s/cap-deployment.yaml
-kubectl apply -f k8s/cap-service.yaml
+kubectl apply -f k8s/meritcap-deployment.yaml
+kubectl apply -f k8s/meritcap-service.yaml
 
 # Check status
 kubectl get deployments
@@ -329,7 +329,7 @@ kubectl get pods
 kubectl get services
 
 # View logs
-kubectl logs -f deployment/cap-backend
+kubectl logs -f deployment/meritcap-backend
 ```
 
 ### Scaling
@@ -337,7 +337,7 @@ kubectl logs -f deployment/cap-backend
 **Manual Scaling**:
 
 ```bash
-kubectl scale deployment cap-backend --replicas=5
+kubectl scale deployment meritcap-backend --replicas=5
 ```
 
 **Auto Scaling**:
@@ -346,12 +346,12 @@ kubectl scale deployment cap-backend --replicas=5
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: cap-backend-hpa
+  name: meritcap-backend-hpa
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: cap-backend
+    name: meritcap-backend
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -371,15 +371,15 @@ spec:
 
 ```json
 {
-  "family": "cap-backend",
+  "family": "meritcap-backend",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "512",
   "memory": "1024",
   "containerDefinitions": [
     {
-      "name": "cap-backend",
-      "image": "<account-id>.dkr.ecr.us-east-1.amazonaws.com/cap-backend:latest",
+      "name": "meritcap-backend",
+      "image": "<account-id>.dkr.ecr.us-east-1.amazonaws.com/meritcap-backend:latest",
       "portMappings": [
         {
           "containerPort": 8080,
@@ -401,7 +401,7 @@ spec:
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/cap-backend",
+          "awslogs-group": "/ecs/meritcap-backend",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
@@ -432,12 +432,12 @@ aws ecs register-task-definition --cli-input-json file://cap-task-definition.jso
 ```bash
 aws ecs create-service \
   --cluster cap-prod-cluster \
-  --service-name cap-backend-service \
-  --task-definition cap-backend \
+  --service-name meritcap-backend-service \
+  --task-definition meritcap-backend \
   --desired-count 3 \
   --launch-type FARGATE \
   --network-configuration "awsvpcConfiguration={subnets=[subnet-xxx,subnet-yyy],securityGroups=[sg-xxx],assignPublicIp=ENABLED}" \
-  --load-balancers "targetGroupArn=arn:aws:elasticloadbalancing:region:account:targetgroup/cap-tg,containerName=cap-backend,containerPort=8080"
+  --load-balancers "targetGroupArn=arn:aws:elasticloadbalancing:region:account:targetgroup/cap-tg,containerName=meritcap-backend,containerPort=8080"
 ```
 
 ## CI/CD Pipeline
@@ -472,7 +472,7 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"cap-backend","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":"meritcap-backend","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files: imagedefinitions.json
@@ -511,7 +511,7 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: cap-backend
+          ECR_REPOSITORY: meritcap-backend
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -521,7 +521,7 @@ jobs:
         run: |
           aws ecs update-service \
             --cluster cap-prod-cluster \
-            --service cap-backend-service \
+            --service meritcap-backend-service \
             --force-new-deployment
 ```
 
@@ -600,7 +600,7 @@ mysql -h $DB_HOST -u $DB_USER -p$DB_PASSWORD $DB_NAME < database/migrations/002_
 ```bash
 # CPU Alarm
 aws cloudwatch put-metric-alarm \
-  --alarm-name cap-backend-high-cpu \
+  --alarm-name meritcap-backend-high-cpu \
   --alarm-description "Alert when CPU exceeds 80%" \
   --metric-name CPUUtilization \
   --namespace AWS/ECS \
@@ -617,13 +617,13 @@ aws cloudwatch put-metric-alarm \
 
 ```bash
 # ECS logs
-aws logs tail /ecs/cap-backend --follow
+aws logs tail /ecs/meritcap-backend --follow
 
 # Kubernetes logs
-kubectl logs -f deployment/cap-backend
+kubectl logs -f deployment/meritcap-backend
 
 # Docker logs
-docker logs -f cap-backend
+docker logs -f meritcap-backend
 ```
 
 ## Rollback Procedures
@@ -632,26 +632,26 @@ docker logs -f cap-backend
 
 ```bash
 # List task definitions
-aws ecs list-task-definitions --family-prefix cap-backend
+aws ecs list-task-definitions --family-prefix meritcap-backend
 
 # Update to previous version
 aws ecs update-service \
   --cluster cap-prod-cluster \
-  --service cap-backend-service \
-  --task-definition cap-backend:5  # previous version
+  --service meritcap-backend-service \
+  --task-definition meritcap-backend:5  # previous version
 ```
 
 ### Kubernetes Rollback
 
 ```bash
 # View rollout history
-kubectl rollout history deployment/cap-backend
+kubectl rollout history deployment/meritcap-backend
 
 # Rollback to previous version
-kubectl rollout undo deployment/cap-backend
+kubectl rollout undo deployment/meritcap-backend
 
 # Rollback to specific revision
-kubectl rollout undo deployment/cap-backend --to-revision=2
+kubectl rollout undo deployment/meritcap-backend --to-revision=2
 ```
 
 ### Database Rollback
@@ -713,7 +713,7 @@ ab -n 1000 -c 10 https://api.cap.com/actuator/health
 aws ecs describe-tasks --cluster cap-prod-cluster --tasks <task-id>
 
 # Check container logs
-aws logs tail /ecs/cap-backend --since 10m
+aws logs tail /ecs/meritcap-backend --since 10m
 ```
 
 **Database Connection Failed**:

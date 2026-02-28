@@ -62,8 +62,8 @@ This guide helps developers set up their local development environment and under
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/your-org/cap-backend.git
-cd cap-backend
+git clone https://github.com/your-org/meritcap-backend.git
+cd meritcap-backend
 ```
 
 ### 2. Database Setup
@@ -73,16 +73,16 @@ cd cap-backend
 mysql -u root -p
 
 # Create database
-CREATE DATABASE cap_dev;
+CREATE DATABASE meritcap_dev;
 
 # Create user
 CREATE USER 'cap_user'@'localhost' IDENTIFIED BY 'cap_password';
-GRANT ALL PRIVILEGES ON cap_dev.* TO 'cap_user'@'localhost';
+GRANT ALL PRIVILEGES ON meritcap_dev.* TO 'cap_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
 
 # Run migrations
-mysql -u cap_user -p cap_dev < database/migrations/001_create_leads_table.sql
+mysql -u cap_user -p meritcap_dev < database/migrations/001_create_leads_table.sql
 ```
 
 ### 3. Configuration
@@ -98,7 +98,7 @@ cp src/main/resources/application-dev.properties.example \
 
 ```properties
 # Database
-spring.datasource.url=jdbc:mysql://localhost:3306/cap_dev
+spring.datasource.url=jdbc:mysql://localhost:3306/meritcap_dev
 spring.datasource.username=cap_user
 spring.datasource.password=cap_password
 
@@ -108,7 +108,7 @@ aws.cognito.clientId=xxxxxxxxxxxxxxxxxxxx
 aws.cognito.clientSecret=xxxxxxxxxxxxxxxxxxxxxx
 
 # Logging
-logging.level.com.consultancy.education=DEBUG
+logging.level.com.meritcap=DEBUG
 ```
 
 ### 4. Build Project
@@ -139,7 +139,7 @@ java -jar target/education-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 
 1. **Import Project**:
 
-   - File → Open → Select `cap-backend` folder
+   - File → Open → Select `meritcap-backend` folder
    - IntelliJ will auto-detect Maven project
 
 2. **Configure JDK**:
@@ -161,7 +161,7 @@ java -jar target/education-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 5. **Run Configuration**:
    - Run → Edit Configurations
    - Add new "Spring Boot" configuration
-   - Main class: `com.consultancy.education.EducationApplication`
+   - Main class: `com.meritcap.EducationApplication`
    - Active profiles: `dev`
 
 ### VS Code
@@ -182,7 +182,7 @@ java -jar target/education-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
       "type": "java",
       "name": "Spring Boot",
       "request": "launch",
-      "mainClass": "com.consultancy.education.EducationApplication",
+      "mainClass": "com.meritcap.EducationApplication",
       "projectName": "education",
       "args": "--spring.profiles.active=dev"
     }
@@ -303,7 +303,7 @@ private String firstName;
 private static final int MAX_RETRIES = 3;
 
 // Packages - lowercase
-package com.consultancy.education.service;
+package com.meritcap.service;
 ```
 
 **Code Organization**:
@@ -358,7 +358,7 @@ public class Lead {
 ### Package Structure
 
 ```
-com.consultancy.education/
+com.meritcap/
 ├── api/                    # External API clients
 ├── config/                 # Configuration classes
 ├── controller/             # REST controllers
@@ -557,7 +557,7 @@ public class LeadService {
 **Command Line**:
 
 ```bash
-mysql -u cap_user -p cap_dev
+mysql -u cap_user -p meritcap_dev
 
 # List tables
 SHOW TABLES;
@@ -573,10 +573,10 @@ SELECT * FROM leads WHERE status = 'HOT';
 
 ```bash
 # Run new migration
-mysql -u cap_user -p cap_dev < database/migrations/002_add_column.sql
+mysql -u cap_user -p meritcap_dev < database/migrations/002_add_column.sql
 
 # Rollback (if rollback script provided)
-mysql -u cap_user -p cap_dev < database/migrations/002_add_column_rollback.sql
+mysql -u cap_user -p meritcap_dev < database/migrations/002_add_column_rollback.sql
 ```
 
 ## API Testing
@@ -726,7 +726,7 @@ mvn javadoc:javadoc
 
 ## Getting Help
 
-- **Team Chat**: Slack #cap-backend-dev
+- **Team Chat**: Slack #meritcap-backend-dev
 - **Tech Lead**: tech-lead@cap.com
 - **Documentation**: https://wiki.cap.com
 - **Issue Tracker**: JIRA Cap-Backend project

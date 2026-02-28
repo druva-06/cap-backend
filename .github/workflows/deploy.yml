@@ -6,7 +6,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner }}/cap-backend
+  IMAGE_NAME: ${{ github.repository_owner }}/meritcap-backend
 
 jobs:
   build-and-deploy:
@@ -53,8 +53,8 @@ jobs:
           username: deployer
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            microk8s kubectl set image deployment/cap-backend \
-              cap-backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.env.outputs.env }}-${{ github.sha }} \
+            microk8s kubectl set image deployment/meritcap-backend \
+              meritcap-backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.env.outputs.env }}-${{ github.sha }} \
               -n ${{ steps.env.outputs.namespace }}
-            microk8s kubectl rollout status deployment/cap-backend \
+            microk8s kubectl rollout status deployment/meritcap-backend \
               -n ${{ steps.env.outputs.namespace }} --timeout=120s

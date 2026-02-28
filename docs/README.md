@@ -1,6 +1,6 @@
 # CAP Backend Documentation
 
-This directory contains all technical documentation for the Career Advice Point (CAP) backend system.
+This directory contains all technical documentation for the MeritCap (CAP) backend system.
 
 ## Directory Structure
 
@@ -333,7 +333,7 @@ Usage examples
 If you need help with documentation:
 
 1. **Check Existing Docs**: Browse this directory
-2. **Ask the Team**: Slack #cap-backend-docs
+2. **Ask the Team**: Slack #meritcap-backend-docs
 3. **Check Wiki**: https://wiki.cap.com
 4. **Contact Documentation Lead**: docs-lead@cap.com
 

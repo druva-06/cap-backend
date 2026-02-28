@@ -1,2 +1,2 @@
 org.springframework.boot.env.EnvironmentPostProcessor=\
-com.consultancy.education.config.AwsSecretsEnvironmentPostProcessor
+com.meritcap.config.AwsSecretsEnvironmentPostProcessor

@@ -1,0 +1,30 @@
+package com.meritcap.repository;
+
+import com.meritcap.enums.LeadStatus;
+import com.meritcap.model.Lead;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface LeadRepository extends JpaRepository<Lead, Long>, JpaSpecificationExecutor<Lead> {
+
+    Optional<Lead> findByEmail(String email);
+
+    Optional<Lead> findByPhoneNumber(String phoneNumber);
+
+    List<Lead> findByEmailOrPhoneNumber(String email, String phoneNumber);
+
+    List<Lead> findByAssignedToId(Long assignedToId);
+
+    List<Lead> findByCreatedById(Long createdById);
+
+    boolean existsByEmail(String email);
+
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    Long countByStatus(LeadStatus status);
+}

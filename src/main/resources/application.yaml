@@ -1,6 +1,6 @@
 spring:
   application:
-    name: career-advice-point-backend
+    name: meritcap-backend
 
   jackson:
     date-format: dd/MM/yyyy

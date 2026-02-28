@@ -51,7 +51,7 @@ spring:
   "invitationToken": "abc-123-xyz",
   "emailDetails": {
     "recipientEmail": "user@example.com",
-    "subject": "You're invited to join Career Advice Point",
+    "subject": "You're invited to join MeritCap",
     "signupLink": "http://localhost:3000/signup?token=abc-123-xyz",
     "sent": false
   }
@@ -69,7 +69,7 @@ spring:
   "message": "Account created successfully",
   "welcomeEmailDetails": {
     "recipientEmail": "user@example.com",
-    "subject": "Welcome to Career Advice Point!",
+    "subject": "Welcome to MeritCap!",
     "sent": false
   }
 }
