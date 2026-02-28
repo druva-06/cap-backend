@@ -31,15 +31,18 @@ public class WishlistController {
         log.info("Received request to add course {} to student {}'s wishlist", request.getCollegeCourseId(), studentId);
         try {
             WishlistItemResponse response = wishlistService.addWishlistItem(studentId, request);
-            log.info("Successfully added course {} to wishlist for student {}", request.getCollegeCourseId(), studentId);
+            log.info("Successfully added course {} to wishlist for student {}", request.getCollegeCourseId(),
+                    studentId);
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(new ApiSuccessResponse<>(response, "Item added to wishlist", 201));
         } catch (IllegalArgumentException e) {
-            log.warn("Failed to add course {} to wishlist for student {}: {}", request.getCollegeCourseId(), studentId, e.getMessage());
+            log.warn("Failed to add course {} to wishlist for student {}: {}", request.getCollegeCourseId(), studentId,
+                    e.getMessage());
             return ResponseEntity.badRequest()
                     .body(new ApiFailureResponse<>(null, e.getMessage(), 400));
         } catch (Exception e) {
-            log.error("Unexpected error while adding course {} to wishlist for student {}: {}", request.getCollegeCourseId(), studentId, e.getMessage(), e);
+            log.error("Unexpected error while adding course {} to wishlist for student {}: {}",
+                    request.getCollegeCourseId(), studentId, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(null, "Internal server error", 500));
         }
@@ -79,7 +82,8 @@ public class WishlistController {
             return ResponseEntity.badRequest()
                     .body(new ApiFailureResponse<>(null, e.getMessage(), 400));
         } catch (Exception e) {
-            log.error("Unexpected error while removing wishlist item {} for student {}: {}", wishlistItemId, studentId, e.getMessage(), e);
+            log.error("Unexpected error while removing wishlist item {} for student {}: {}", wishlistItemId, studentId,
+                    e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ApiFailureResponse<>(null, "Internal server error", 500));
         }
