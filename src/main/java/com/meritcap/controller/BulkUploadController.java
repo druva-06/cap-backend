@@ -11,9 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.util.StringUtils;
@@ -37,12 +36,17 @@ public class BulkUploadController {
         this.bulkUploadService = bulkUploadService;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
+    private String getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.getPrincipal() != null)
+                ? auth.getPrincipal().toString()
+                : "system";
+    }
+
     @Operation(summary = "Start combined bulk upload", description = "Starts background processing of the provided .xlsx file containing colleges, courses and college-course mappings. Returns jobId.")
     @PostMapping(consumes = "multipart/form-data")
-    public ResponseEntity<?> startUpload(@RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal Jwt jwt) {
-        String currentUser = (jwt == null) ? "system" : jwt.getClaimAsString("sub");
+    public ResponseEntity<?> startUpload(@RequestParam("file") MultipartFile file) {
+        String currentUser = getCurrentUser();
         String originalFilename = (file != null) ? StringUtils.cleanPath(file.getOriginalFilename()) : "N/A";
         long fileSize = (file != null) ? file.getSize() : 0;
 
@@ -92,11 +96,10 @@ public class BulkUploadController {
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @GetMapping("/jobs")
     @Operation(summary = "List recent bulk upload jobs", description = "Returns the most recent bulk upload jobs")
-    public ResponseEntity<?> listJobs(@AuthenticationPrincipal Jwt jwt) {
-        String currentUser = (jwt == null) ? "system" : jwt.getClaimAsString("sub");
+    public ResponseEntity<?> listJobs() {
+        String currentUser = getCurrentUser();
         log.info("BulkUploadController.listJobs invoked user={}", currentUser);
 
         try {
@@ -109,12 +112,10 @@ public class BulkUploadController {
         }
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN')")
     @GetMapping("/{jobId}/status")
     @Operation(summary = "Get bulk job status", description = "Returns current progress for the given jobId")
-    public ResponseEntity<?> getStatus(@PathVariable("jobId") Long jobId,
-            @AuthenticationPrincipal Jwt jwt) {
-        String currentUser = (jwt == null) ? "system" : jwt.getClaimAsString("sub");
+    public ResponseEntity<?> getStatus(@PathVariable("jobId") Long jobId) {
+        String currentUser = getCurrentUser();
         log.info("BulkUploadController.getStatus invoked user={} jobId={}", currentUser, jobId);
 
         try {
