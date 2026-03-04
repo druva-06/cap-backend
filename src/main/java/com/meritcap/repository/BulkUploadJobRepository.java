@@ -61,4 +61,10 @@ public interface BulkUploadJobRepository extends JpaRepository<BulkUploadJob, Lo
     int updateProcessedRecords(@Param("id") Long id,
             @Param("processed") int processed,
             @Param("updatedAt") LocalDateTime updatedAt);
+
+    /**
+     * Find all jobs with a given status (used for startup recovery of orphaned
+     * IN_PROGRESS jobs).
+     */
+    List<BulkUploadJob> findByStatus(BulkUploadJob.Status status);
 }
