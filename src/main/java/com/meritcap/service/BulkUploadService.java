@@ -8,6 +8,8 @@ import java.util.List;
 
 public interface BulkUploadService {
     BulkUploadResponseDto startBulkUpload(MultipartFile file, String currentUserId);
+
     BulkUploadStatusDto getStatus(Long jobId);
+
     List<BulkUploadStatusDto> listRecentJobs();
 }
