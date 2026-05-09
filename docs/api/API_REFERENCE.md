@@ -54,6 +54,77 @@ Content-Type: application/json
 }
 ```
 
+---
+
+## Endpoint Template
+
+Use this exact format for every new endpoint added below.
+
+```
+### METHOD /api/path
+**Description**: one-line description of what this endpoint does
+
+**Auth**: Public | Bearer JWT
+**Roles**: ADMIN, COUNSELOR, STUDENT (list roles that can call this; omit if public)
+
+#### Headers
+| Header | Value | Required |
+|---|---|---|
+| Authorization | Bearer \<jwt_token\> | Yes (if protected) |
+| Content-Type | application/json | Yes (POST / PUT) |
+
+#### Path Parameters
+| Param | Type | Description |
+|---|---|---|
+| id | Long | Resource ID |
+
+#### Query Parameters
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| page | int | No | 0 | Page number (0-indexed) |
+| size | int | No | 20 | Items per page |
+
+#### Request Body
+\`\`\`json
+{
+  "field": "value"
+}
+\`\`\`
+
+#### Tables Affected
+| Table | Operation | Notes |
+|---|---|---|
+| `table_name` | READ / WRITE | what is stored or read |
+
+#### Flow
+1. `CognitoJwtAuthFilter` validates JWT → sets SecurityContext
+2. `XxxController` validates request via `@Valid`
+3. `XxxService.method()` — describe business logic
+4. `XxxRepository.save()` — persists to `table_name`
+5. `XxxTransformer.toDto()` — converts entity → DTO
+6. Returns `ApiSuccessResponse<XxxDto>`
+
+#### Response (200 / 201)
+\`\`\`json
+{
+  "data": { ... },
+  "message": "Success message",
+  "statusCode": 200
+}
+\`\`\`
+
+#### Error Responses
+| Status | Reason |
+|---|---|
+| 400 | Validation failed / business rule violation |
+| 401 | Missing or invalid JWT |
+| 403 | Insufficient role |
+| 404 | Resource not found |
+| 500 | Internal server error |
+```
+
+---
+
 ## API Endpoints
 
 ## Authentication APIs
